@@ -1,6 +1,5 @@
 package mainPack;
 
-import logist.LogistPlatform;
 import logist.agent.Agent;
 import logist.behavior.ReactiveBehavior;
 import logist.plan.Action;
@@ -9,7 +8,6 @@ import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.topology.Topology;
 
-import java.util.Iterator;
 
 /**
  * Created by lorenzotara on 03/10/17.
@@ -23,6 +21,8 @@ public class ReactiveAgent implements ReactiveBehavior {
      */
     @Override
     public void setup(Topology topology, TaskDistribution distribution, Agent agent) {
+
+        agent.vehicles().get(0);
 
     }
 
