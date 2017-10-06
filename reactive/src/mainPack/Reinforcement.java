@@ -129,10 +129,10 @@ public class Reinforcement {
                 if(!nextState.isTaskPresent() && nextStateDestinationCity.hasNeighbor(currentStateDestinationCity)) {
                     return taskDistribution.probability(currentStateDestinationCity, null) / currentStateDestinationCity.neighbors().size();
                 }
-                return 0;
+                return 0.;
 
             default:
-                return 0;
+                return 0.;
         }
 
     }
@@ -140,7 +140,7 @@ public class Reinforcement {
 
     private double sumOfWeightedValues(State state0, Action action) {
 
-        double accumulatorQ = 0;
+        double accumulatorQ = 0.;
 
         for (State state1 : stateList) {
             accumulatorQ += transitionFunction(state0, action, state1) * accumulatedValues.get(state1);
@@ -173,8 +173,9 @@ public class Reinforcement {
 
         initializeAccumalatedValues();
 
-        double currentV = 0;
+        double currentV = 0.;
         double maxQ = 0.;
+        Action bestAction = null;
 
         do {
 
@@ -191,12 +192,24 @@ public class Reinforcement {
                     double q = functionQ(state, action);
                     valuesList.add(q);
 
+                    if (q > maxQ) {
+
+                        maxQ = q;
+                        bestAction = action;
+                    }
+
+
                     tableQ.put(stateActionTuple, q); //TODO: controllare se serve
                 }
 
-                maxQ = (valuesList.stream().reduce((x, y) -> Math.max(x,y))).get();
+                /* Optional<Double> temp = valuesList.stream().reduce(Math::max);
+
+                if (temp.isPresent()) {
+                    maxQ = temp.get();
+                } */
 
                 accumulatedValues.put(state, maxQ);
+                best.put(state, bestAction);
             }
         }
         while (Math.abs(currentV - maxQ) <= STOPPING_CRITERION);
