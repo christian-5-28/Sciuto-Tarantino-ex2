@@ -14,6 +14,11 @@ import logist.topology.Topology;
  */
 public class ReactiveAgent implements ReactiveBehavior {
 
+    private double discountFactor;
+
+    private Reinforcement reinforcement;
+
+
     /**
      * The setup method is called exactly once, before the simulation
      * starts and before any other method is called.
@@ -22,7 +27,16 @@ public class ReactiveAgent implements ReactiveBehavior {
     @Override
     public void setup(Topology topology, TaskDistribution distribution, Agent agent) {
 
-        agent.vehicles().get(0);
+        //agent.vehicles().get(0);
+
+        discountFactor = agent.readProperty("discount-factor", Double.class,
+                0.95);
+
+        reinforcement = new Reinforcement(topology, distribution, agent, discountFactor);
+
+        reinforcement.MDP();
+
+
 
     }
 
@@ -44,6 +58,20 @@ public class ReactiveAgent implements ReactiveBehavior {
     @Override
     public Action act(Vehicle vehicle, Task availableTask) {
 
-        return null;
+        State currentState = new State(vehicle.getCurrentCity(), availableTask == null ? null : availableTask.deliveryCity);
+
+        Topology.City bestNextCity = reinforcement.getNextBestCity(currentState);
+
+        if(currentState.getDestination() == bestNextCity){
+
+            return new Action.Pickup(availableTask);
+        }
+
+        else {
+
+           return new Action.Move(bestNextCity);
+
+        }
+
     }
 }

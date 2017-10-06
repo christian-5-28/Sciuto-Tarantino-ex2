@@ -43,8 +43,8 @@ public class Reinforcement {
 
     /**
      * Cartesian product of the cities in order to create the states.
-     * There are no states with the same city as starting point and destination
-     * and every combination can have the presence of a task or not.
+     * There are no states with the same city as starting point and destination,
+     *
      */
     private void initializeStates() {
 
@@ -52,11 +52,12 @@ public class Reinforcement {
 
         for (City city0 : cities) {
 
+            stateList.add(new State(city0, null));
+
             for (City city1 : cities) {
 
                 if (city0.id != city1.id) {
-                    stateList.add(new State(city0, city1, true));
-                    stateList.add(new State(city0, city1, false));
+                    stateList.add(new State(city0, city1));
                 }
             }
         }
@@ -73,10 +74,7 @@ public class Reinforcement {
 
         for (City city : cities) {
 
-            for (Action.ActionType actionType : Action.ActionType.values()) {
-
-                actionList.add(new Action(actionType, city));
-            }
+            actionList.add(new Action(city));
         }
     }
 
@@ -89,52 +87,54 @@ public class Reinforcement {
     }
 
     /**
-     * Returns the reward the agent gets when it takes the action "actionSelected" from the state "currentState"
-     * @param currentState
-     * @param actionSelected
-     * @return
+     * Returns the reward the agent gets when it takes the action "actionSelected" from the state "currentState",
+     * if the possible destination city of the current state is equal to the next city of the action then the reward
+     * is the expected reward from the taskDistribution minus the cost of the street, otherwise the reward is
+     * the cost of the street
      */
     private double reward(State currentState, Action actionSelected){
 
-        City startingCity = currentState.getDestination();
-        City destinationCity = actionSelected.getDestination();
+        City possibleDestinationCity = currentState.getDestination();
+        City actionDestinationCity = actionSelected.getNextCity();
+
+        double streetCost = possibleDestinationCity.distanceTo(actionDestinationCity) * agent.vehicles().get(0).costPerKm();
+
+        if(possibleDestinationCity.id == actionDestinationCity.id){
+
 
         return taskDistribution
-                .reward(startingCity, destinationCity)
-                - startingCity.distanceTo(destinationCity) * agent.vehicles().get(0).costPerKm();
+                .reward(possibleDestinationCity, actionDestinationCity) - streetCost;
+
+        }
+
+        else {
+
+            return - streetCost;
+        }
 
     }
 
+    /**
+     *
+     * returns the probability to be in the specific nextState considering the currentState and the action selected.
+     * If the city of the action selected is not equal to the currentState possibleDestination and it is not equal
+     * to the nextState currentCity the probability is zero.
+     *
+     */
     private double transitionFunction(State currentState, Action action, State nextState) {
 
-        //City actionDestinationCity = action.getDestination();
-        City currentStateDestinationCity = currentState.getDestination();
-        City nextStateStartingCity = nextState.getStartingCity();
-        City nextStateDestinationCity = nextState.getDestination();
+        City nextCity = action.getNextCity();
+        City nextStateCurrentCity = nextState.getStartingCity();
 
-        if (currentStateDestinationCity != nextStateStartingCity
-                /*|| actionDestinationCity != nextStateDestinationCity*/) {
-            return 0.;
+        for (Action validAction : currentState.getValidActionList()) {
+
+            if(nextCity.id == validAction.getNextCity().id && nextCity.id == nextStateCurrentCity.id){
+
+                return taskDistribution.probability(nextCity, nextState.getDestination());
+            }
         }
 
-        switch (action.getActionType()) {
-
-            case PICKUP:
-                if(nextState.isTaskPresent()){
-                    return taskDistribution.probability(currentStateDestinationCity, nextStateDestinationCity);
-                }
-                return 0.;
-
-            case MOVE:
-                if(!nextState.isTaskPresent() && nextStateDestinationCity.hasNeighbor(currentStateDestinationCity)) {
-                    return taskDistribution.probability(currentStateDestinationCity, null) / currentStateDestinationCity.neighbors().size();
-                }
-                return 0.;
-
-            default:
-                return 0.;
-        }
-
+        return 0.;
     }
 
 
@@ -223,8 +223,9 @@ public class Reinforcement {
         //TODO: vedere se funziona la copia
     }
 
-    public Map<State, Action> getBest() {
-        return new HashMap<>(best);
+    public City getNextBestCity(State state) {
+
+        return best.get(state).getNextCity();
         //TODO: vedere se funziona la copia
     }
 }

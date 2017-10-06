@@ -7,35 +7,17 @@ import logist.topology.Topology.City;
  */
 public class Action {
 
-    enum ActionType {
-
-        PICKUP,
-        MOVE
-    }
-
-    private ActionType actionType;
     private City destination;
 
-    public Action(ActionType actionType, City destination) {
-        this.actionType = actionType;
+    public Action(City destination) {
+
         this.destination = destination;
     }
 
-    //TODO: executeAction()
 
-    public ActionType getActionType() {
-        return actionType;
-    }
-
-    public void setActionType(ActionType actionType) {
-        this.actionType = actionType;
-    }
-
-    public City getDestination() {
+    public City getNextCity() {
         return destination;
     }
 
-    public void setDestination(City destination) {
-        this.destination = destination;
-    }
+
 }
