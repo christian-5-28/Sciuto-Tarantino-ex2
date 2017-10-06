@@ -99,8 +99,7 @@ public class Reinforcement {
 
         double streetCost = possibleDestinationCity.distanceTo(actionDestinationCity) * agent.vehicles().get(0).costPerKm();
 
-        if(possibleDestinationCity.id == actionDestinationCity.id){
-
+        if(possibleDestinationCity != null && possibleDestinationCity.id == actionDestinationCity.id){
 
         return taskDistribution
                 .reward(possibleDestinationCity, actionDestinationCity) - streetCost;
@@ -109,7 +108,7 @@ public class Reinforcement {
 
         else {
 
-            return - streetCost;
+            return -streetCost;
         }
 
     }
