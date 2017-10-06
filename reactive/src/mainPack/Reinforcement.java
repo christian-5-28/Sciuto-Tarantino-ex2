@@ -107,13 +107,13 @@ public class Reinforcement {
 
     private double transitionFunction(State currentState, Action action, State nextState) {
 
-        City actionDestinationCity = action.getDestination();
+        //City actionDestinationCity = action.getDestination();
         City currentStateDestinationCity = currentState.getDestination();
         City nextStateStartingCity = nextState.getStartingCity();
         City nextStateDestinationCity = nextState.getDestination();
 
         if (currentStateDestinationCity != nextStateStartingCity
-                || actionDestinationCity != nextStateDestinationCity) {
+                /*|| actionDestinationCity != nextStateDestinationCity*/) {
             return 0.;
         }
 
