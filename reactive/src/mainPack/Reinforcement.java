@@ -127,7 +127,7 @@ public class Reinforcement {
 
             case MOVE:
                 if(!nextState.isTaskPresent() && nextStateDestinationCity.hasNeighbor(currentStateDestinationCity)) {
-                    return taskDistribution.probability(currentStateDestinationCity, null);
+                    return taskDistribution.probability(currentStateDestinationCity, null) / currentStateDestinationCity.neighbors().size();
                 }
                 return 0;
 
@@ -173,8 +173,6 @@ public class Reinforcement {
 
         initializeAccumalatedValues();
 
-        //Optional<Double> currentMaxValue = accumulatedValues.values().stream().reduce((x, y) -> Math.max(x,y));
-
         double currentV = 0;
         double maxQ = 0.;
 
@@ -192,17 +190,15 @@ public class Reinforcement {
 
                     double q = functionQ(state, action);
                     valuesList.add(q);
-                    tableQ.put(stateActionTuple, q);
+
+                    tableQ.put(stateActionTuple, q); //TODO: controllare se serve
                 }
 
                 maxQ = (valuesList.stream().reduce((x, y) -> Math.max(x,y))).get();
 
                 accumulatedValues.put(state, maxQ);
             }
-
-
         }
-
         while (Math.abs(currentV - maxQ) <= STOPPING_CRITERION);
     }
 
