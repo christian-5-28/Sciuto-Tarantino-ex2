@@ -33,7 +33,12 @@ public class State {
             
         }
 
-        validActionList.add(new Action(destination));
+        if(destination != null){
+
+            validActionList.add(new Action(destination));
+        }
+
+        //TODO:elimina duplicati, i ottengono se destination è anche neighbourn di starting city
     }
 
 
@@ -48,6 +53,19 @@ public class State {
     public List<Action> getValidActionList(){
 
         return new ArrayList<>(validActionList);
+    }
+
+    public boolean actionIsValid(Action action){
+
+        for (Action action1 : validActionList) {
+
+            if(action.getNextCity().id == action1.getNextCity().id){
+                return true;
+            }
+        }
+
+        return false;
+
     }
 
 }

@@ -8,6 +8,8 @@ import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.topology.Topology;
 
+import java.util.Map;
+
 
 /**
  * Created by lorenzotara on 03/10/17.
@@ -15,6 +17,8 @@ import logist.topology.Topology;
 public class ReactiveAgent implements ReactiveBehavior {
 
     private double discountFactor;
+
+    private Agent myAgent;
 
     private Reinforcement reinforcement;
 
@@ -27,14 +31,14 @@ public class ReactiveAgent implements ReactiveBehavior {
     @Override
     public void setup(Topology topology, TaskDistribution distribution, Agent agent) {
 
-        //agent.vehicles().get(0);
+        myAgent = agent;
 
         discountFactor = agent.readProperty("discount-factor", Double.class,
                 0.95);
 
-        reinforcement = new Reinforcement(topology, distribution, agent, discountFactor);
+        reinforcement = new Reinforcement(topology, distribution, myAgent, discountFactor);
 
-        reinforcement.MDP();
+        reinforcement.valueIteration();
 
 
 
@@ -58,9 +62,47 @@ public class ReactiveAgent implements ReactiveBehavior {
     @Override
     public Action act(Vehicle vehicle, Task availableTask) {
 
-        State currentState = new State(vehicle.getCurrentCity(), availableTask == null ? null : availableTask.deliveryCity);
+        State currentState = reinforcement.getState(vehicle.getCurrentCity(), availableTask == null ? null : availableTask.deliveryCity);
 
         Topology.City bestNextCity = reinforcement.getNextBestCity(currentState);
+
+
+         ///////////////////////////////////////// TODO: RIMUOVI CODICE DEBUG
+
+        for (Map.Entry<State, mainPack.Action> stateActionEntry : reinforcement.getBest().entrySet()) {
+
+            State state = stateActionEntry.getKey();
+            mainPack.Action action = stateActionEntry.getValue();
+
+            if(action == null){
+
+                int j = 0;
+            }
+
+            else if(state.getStartingCity().id == action.getNextCity().id){
+
+                int i = 0;
+            }
+
+            else{
+
+                int counter = 0;
+
+                for (mainPack.Action action1 : state.getValidActionList()) {
+
+                    if(action.getNextCity().id != action1.getNextCity().id){
+
+                        counter++;
+                    }
+
+                    if(counter == state.getValidActionList().size()){
+
+                        counter++;
+                    }
+                }
+            }
+        }
+        //////////////////////////////////////////////////////////////////////
 
         if(currentState.getDestination() == bestNextCity){
 

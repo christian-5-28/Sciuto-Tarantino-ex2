@@ -51,5 +51,6 @@ public class ReactiveTemplate implements ReactiveBehavior {
 		numActions++;
 		
 		return action;
+
 	}
 }
