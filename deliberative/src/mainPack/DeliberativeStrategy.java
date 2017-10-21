@@ -1,5 +1,6 @@
 package mainPack;
 
+import logist.plan.Action;
 import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
@@ -14,27 +15,86 @@ import java.util.*;
  */
 public class DeliberativeStrategy {
 
-    private Node root;
-    private List<Action> actionList;
+    private List<State> goalStateList;
+    private List<DeliberativeAction> actionList;
 
+    public DeliberativeStrategy(Topology topology) {
+        this.goalStateList = new ArrayList<>();
+
+        createActions(topology);
+    }
 
     public Plan astar(Vehicle vehicle, TaskSet tasks) {
-        createTreeRoot(vehicle, tasks);
+        //createTreeRoot(vehicle, tasks);
         return null;
     }
 
     public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
-        createTree(vehicle, availabletasks, carriedTasks);
+        //createTree(vehicle, availabletasks, carriedTasks);
         return null;
     }
 
     public Plan bfs(Vehicle vehicle, TaskSet tasks) {
-        createTreeRoot(vehicle, tasks);
-        return null;
+
+        Deque<State> notVisitedQueue = new ArrayDeque<>();
+
+        Set<State> visitedNodesSet = new HashSet<>();
+
+        City currentCity = vehicle.getCurrentCity();
+        List<Task> availableTasks = new ArrayList<>(tasks);
+        List<Task> currentTasks = new ArrayList<>();
+        List<Action> actionAlreadyExecuted = new ArrayList<>();
+
+        State root = new State(currentCity, availableTasks, currentTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
+
+        notVisitedQueue.addFirst(root);
+
+        while (!notVisitedQueue.isEmpty()){
+
+            State currentState = notVisitedQueue.pop();
+
+            if(isGoalState(currentState)){
+                goalStateList.add(currentState);
+            }
+
+            for (State child : getChildren(currentState)) {
+
+                if(visitedNodesSet.contains(child)){
+                    continue;
+                }
+                if(!notVisitedQueue.contains(child)){
+                    notVisitedQueue.push(child);
+                }
+                visitedNodesSet.add(currentState);
+            }
+        }
+
+        return createOptimalPlan(goalStateList, currentCity);
     }
 
-    public Plan bfs(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
+    private Plan createOptimalPlan(List<State> goalStateList, City startCity) {
+
+        State bestGoalState = goalStateList.get(0);
+
+        for (State state : goalStateList) {
+            if(state.getDistanceCost() > bestGoalState.getDistanceCost()){
+                bestGoalState = state;
+            }
+        }
+
+        return new Plan(startCity, bestGoalState.getActionsAlreadyExecuted());
+
+    }
+
+    private boolean isGoalState(State currentState) {
+
+        return currentState.getAvailableTasks().isEmpty()
+                && currentState.getCurrentTasks().isEmpty();
+    }
+
+
+   /* public Plan bfs(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
         createTree(vehicle, availabletasks, carriedTasks);
         return null;
@@ -63,48 +123,54 @@ public class DeliberativeStrategy {
             // Pop the node I want to work on
             Node currentNode = nodeQueue.pop();
 
-            createAllTheChildren(currentNode, nodeQueue);
+            //createAllTheChildren(currentNode, nodeQueue);
 
         }
-    }
+    }*/
 
-    private void createAllTheChildren(Node currentNode, Deque<Node> nodeQueue) {
+    private List<State> getChildren(State currentState) {
 
-        State currentState = currentNode.getState();
+        List<State> stateList = new ArrayList<>();
 
         // Create all the children
-        for (Action action : actionList) {
+        for (DeliberativeAction deliberativeAction : actionList) {
 
-            if (currentState.isActionPossible(action)) {
+            if (currentState.isActionPossible(deliberativeAction)) {
 
-                State childState = createState(currentNode.getState(), action);
+                State childState = createState(currentState, deliberativeAction);
 
-                Node child = currentNode.addChild(childState);
-
-                nodeQueue.push(child);
+                stateList.add(childState);
             }
         }
+
+        return stateList;
     }
 
 
-    public State createState(State currentState, Action action) {
+    public State createState(State currentState, DeliberativeAction deliberativeAction) {
 
+
+        double distanceCost = currentState.getDistanceCost();
+        List<Action> actionsExecuted = currentState.getActionsAlreadyExecuted();
         List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
         List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
         int availableCapacity = currentState.getAvailableCapacity();
 
         for (Task task : currentState.getCurrentTasks()) {
 
-            if (task.deliveryCity.equals(action.getDestination())) {
+            if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
+
+                //TODO: deliver logist
+                actionsExecuted.add(new Action.Delivery(task));
+
                 currentTasks.remove(task);
                 availableCapacity += task.weight;
-                //TODO: deliver logist
             }
 
         }
 
 
-        if (action.isPickup()) {
+        if (deliberativeAction.isPickup()) {
             // Search if there is an available task from the city where the agent is
             // He picks it up if the vehicle has enough capacity available - it has to be already checked
             for (Task task : currentState.getAvailableTasks()) {
@@ -114,31 +180,29 @@ public class DeliberativeStrategy {
                     currentTasks.add(task);
                     availableCapacity -= task.weight;
 
-                    //TODO: pickup and move logist
+                    actionsExecuted.add(new Action.Pickup(task));
                 }
             }
         }
 
-        else {
-            // In case of a move action, the only thing that can change is the current tasks list that has already
-            // been updated. So this case is useless
-            //TODO: move logist
-        }
+        actionsExecuted.add(new Action.Move(deliberativeAction.getDestination()));
 
-        return new State(action.getDestination(), availableTasks, currentTasks, availableCapacity);
+        return new State(deliberativeAction.getDestination(), availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
 
     }
 
 
     public void createActions(Topology topology) {
 
+        actionList = new ArrayList<>();
+
         for (City city : topology.cities()) {
 
-            Action action1 = new Action(city, true);
-            Action action2 = new Action(city, false);
+            DeliberativeAction deliberativeAction1 = new DeliberativeAction(city, true);
+            DeliberativeAction deliberativeAction2 = new DeliberativeAction(city, false);
 
-            this.actionList.add(action1);
-            this.actionList.add(action2);
+            this.actionList.add(deliberativeAction1);
+            this.actionList.add(deliberativeAction2);
         }
 
     }
