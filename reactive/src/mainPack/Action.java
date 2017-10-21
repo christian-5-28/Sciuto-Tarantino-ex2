@@ -2,9 +2,6 @@ package mainPack;
 
 import logist.topology.Topology.City;
 
-/**
- * Created by lorenzotara on 05/10/17.
- */
 public class Action {
 
     private City destination;

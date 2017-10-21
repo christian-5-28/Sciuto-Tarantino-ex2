@@ -5,20 +5,18 @@ import logist.topology.Topology.City;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by lorenzotara on 05/10/17.
- */
+
 public class State {
 
-    private City startingCity;
-    private City destination;
+    private City currentCity;
+    private City taskDestination;
 
     private List<Action> validActionList;
 
 
-    public State(City startingCity, City possibleDestination) {
-        this.startingCity = startingCity;
-        this.destination = possibleDestination;
+    public State(City currentCity, City possibleDestination) {
+        this.currentCity = currentCity;
+        this.taskDestination = possibleDestination;
 
         initializeValidActionList();
     }
@@ -27,27 +25,25 @@ public class State {
 
         validActionList = new ArrayList<>();
 
-        for (City city : startingCity.neighbors()) {
+        for (City city : currentCity.neighbors()) {
 
             validActionList.add(new Action(city));
             
         }
 
-        if(destination != null){
+        if(taskDestination != null && !currentCity.hasNeighbor(taskDestination)){
 
-            validActionList.add(new Action(destination));
+            validActionList.add(new Action(taskDestination));
         }
-
-        //TODO:elimina duplicati, i ottengono se destination è anche neighbourn di starting city
     }
 
 
-    public City getStartingCity() {
-        return startingCity;
+    public City getCurrentCity() {
+        return currentCity;
     }
 
-    public City getDestination() {
-        return destination;
+    public City getTaskDestination() {
+        return taskDestination;
     }
 
     public List<Action> getValidActionList(){
@@ -65,7 +61,6 @@ public class State {
         }
 
         return false;
-
     }
 
 }

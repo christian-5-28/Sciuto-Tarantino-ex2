@@ -1,0 +1,13 @@
+dopo 50 mila  tick siamo a 0.65 con 0.05 discount factor e errore 1e-10
+
+1500 tick
+
+all'inizio tocca quasi 0.7, dopo 50mila tick siamo a 0.675 con 0.99 discount // //
+
+all'inizio sotto 0.6, poi cresce e a 50mila tick arriva a 0.64 discount a 0.000001
+
+1500 ticks era a 0.36 poi dopo 50 mila si stabilizza a 0.38 dummy
+
+1000 max a 0.55, poi a 1500 0.52, poi a 50mila si accosta a 0.48 random
+
+1500 a 0.68 poi a 50mila 0.675 reactiveAgent a 0.85 discount

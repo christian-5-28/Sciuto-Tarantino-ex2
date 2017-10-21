@@ -40,8 +40,6 @@ public class ReactiveAgent implements ReactiveBehavior {
 
         reinforcement.valueIteration();
 
-
-
     }
 
     /**
@@ -66,54 +64,13 @@ public class ReactiveAgent implements ReactiveBehavior {
 
         Topology.City bestNextCity = reinforcement.getNextBestCity(currentState);
 
-
-         ///////////////////////////////////////// TODO: RIMUOVI CODICE DEBUG
-
-        for (Map.Entry<State, mainPack.Action> stateActionEntry : reinforcement.getBest().entrySet()) {
-
-            State state = stateActionEntry.getKey();
-            mainPack.Action action = stateActionEntry.getValue();
-
-            if(action == null){
-
-                int j = 0;
-            }
-
-            else if(state.getStartingCity().id == action.getNextCity().id){
-
-                int i = 0;
-            }
-
-            else{
-
-                int counter = 0;
-
-                for (mainPack.Action action1 : state.getValidActionList()) {
-
-                    if(action.getNextCity().id != action1.getNextCity().id){
-
-                        counter++;
-                    }
-
-                    if(counter == state.getValidActionList().size()){
-
-                        counter++;
-                    }
-                }
-            }
-        }
-        //////////////////////////////////////////////////////////////////////
-
-        if(currentState.getDestination() == bestNextCity){
-
+        if(currentState.getTaskDestination() == bestNextCity){
             return new Action.Pickup(availableTask);
         }
-
         else {
-
            return new Action.Move(bestNextCity);
-
         }
-
     }
+
+
 }

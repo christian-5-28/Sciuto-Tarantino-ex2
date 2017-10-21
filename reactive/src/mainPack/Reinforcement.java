@@ -7,17 +7,16 @@ import logist.topology.Topology.City;
 
 import java.util.*;
 
-/**
- * Created by lorenzotara on 05/10/17.
- */
 public class Reinforcement {
 
     private double discountFactor;
 
     private final double STOPPING_CRITERION = 1e-8;
 
-    private Map<State, Double> accumulatedValues;
-    private Map<State, Action> best;
+    private Map<State, Double> accumulatedValuesMap;
+    private Map<State, Action> bestActionPerStateMap;
+
+    private Map<State, Map<Action, Double>> mapQ;
 
     private Topology topology;
     private TaskDistribution taskDistribution;
@@ -32,11 +31,14 @@ public class Reinforcement {
         this.taskDistribution = taskDistribution;
         this.agent = agent;
         this.discountFactor = discountFactor;
-        this.accumulatedValues = new HashMap<>();
-        this.best = new HashMap<>();
+        this.accumulatedValuesMap = new HashMap<>();
+        this.bestActionPerStateMap = new HashMap<>();
+        this.mapQ = new HashMap<>();
 
         initializeStates();
         createActions();
+
+        initializeMapQ();
 
     }
 
@@ -79,10 +81,10 @@ public class Reinforcement {
     }
 
 
-    private void initializeAccumalatedValues() {
+    private void initializeAccumulatedValues() {
 
         for (State state : stateList) {
-            accumulatedValues.put(state, 1.);
+            accumulatedValuesMap.put(state, 1.);
         }
     }
 
@@ -94,8 +96,8 @@ public class Reinforcement {
      */
     private double reward(State currentState, Action actionSelected){
 
-        City currentCity = currentState.getStartingCity();
-        City possibleDestinationCity = currentState.getDestination();
+        City currentCity = currentState.getCurrentCity();
+        City possibleDestinationCity = currentState.getTaskDestination();
         City actionDestinationCity = actionSelected.getNextCity();
 
         double streetCost = currentCity.distanceTo(actionDestinationCity) * agent.vehicles().get(0).costPerKm();
@@ -123,16 +125,14 @@ public class Reinforcement {
      */
     public double transitionFunction(State currentState, Action action, State nextState) {
 
-        //TODO: devi trattare quando lo stato attuale e prossimo sono uguali, ritorna zero
-
         City actionNextCity = action.getNextCity();
-        City nextStateCurrentCity = nextState.getStartingCity();
+        City nextStateCurrentCity = nextState.getCurrentCity();
 
         for (Action validAction : currentState.getValidActionList()) {
 
             if(actionNextCity.id == validAction.getNextCity().id && actionNextCity.id == nextStateCurrentCity.id){
 
-                return taskDistribution.probability(actionNextCity, nextState.getDestination());
+                return taskDistribution.probability(actionNextCity, nextState.getTaskDestination());
             }
         }
 
@@ -145,8 +145,7 @@ public class Reinforcement {
         double accumulatorQ = 0.;
 
         for (State state1 : stateList) {
-
-            accumulatorQ += transitionFunction(state0, action, state1) * accumulatedValues.get(state1);
+            accumulatorQ += transitionFunction(state0, action, state1) * accumulatedValuesMap.get(state1);
         }
         return accumulatorQ;
     }
@@ -160,15 +159,15 @@ public class Reinforcement {
 
     public void valueIteration(){
 
-        initializeAccumalatedValues();
+        initializeAccumulatedValues();
 
         while(true){
 
-            Map<State, Double> tolerateErrorList = new HashMap<>();
+            Map<State, Double> tolerateErrorMap = new HashMap<>();
 
             for (State state : stateList) {
 
-                double currentV = accumulatedValues.get(state);
+                double currentV = accumulatedValuesMap.get(state);
                 double maxReward = Double.NEGATIVE_INFINITY;
 
                 for (Action action : actionList) {
@@ -176,114 +175,59 @@ public class Reinforcement {
                     if(state.actionIsValid(action)){
 
                         double expectedRewardQ = functionQ(state, action);
+                        mapQ.get(state).put(action, expectedRewardQ);
 
                         if(expectedRewardQ > maxReward){
 
                             maxReward = expectedRewardQ;
-                            accumulatedValues.put(state,maxReward);
-                            best.put(state, action);
+                            accumulatedValuesMap.put(state,maxReward);
+                            bestActionPerStateMap.put(state, action);
                         }
 
                     }
 
                 }
 
-                tolerateErrorList.put(state, Math.abs(currentV - accumulatedValues.get(state)));
-
+                tolerateErrorMap.put(state, Math.abs(currentV - accumulatedValuesMap.get(state)));
             }
 
-            int counter = 0;
-
-            for (State state : stateList) {
-
-                if(tolerateErrorList.get(state) < STOPPING_CRITERION){
-
-                    counter++;
-                }
-            }
-
-            if(counter == stateList.size()){
+            if(stoppingCriterionIsVerified(tolerateErrorMap)){
                 return;
+            }
+        }
+    }
+
+    private boolean stoppingCriterionIsVerified(Map<State, Double> tolerateErrorMap) {
+
+        int counter = 0;
+
+        for (State state : stateList) {
+            if(tolerateErrorMap.get(state) < STOPPING_CRITERION){
+                counter++;
+            }
+        }
+
+        return counter == stateList.size();
+    }
+
+    private void initializeMapQ(){
+
+        for (State state : stateList) {
+            for (Action action : state.getValidActionList()) {
+                mapQ.put(state, new HashMap<>());
+                mapQ.get(state).put(action, 0.);
             }
         }
     }
 
 
 
-
-
-
-
-    /*public void valueIteration() {
-
-        class Tuple {
-
-            State state;
-            Action action;
-
-            public Tuple(State state, Action action) {
-                this.state = state;
-                this.action = action;
-            }
-        }
-
-        HashMap<Tuple, Double> tableQ = new HashMap<>();
-
-        initializeAccumalatedValues();
-
-        double currentV = 0.;
-        double maxQ = 0.;
-        Action bestAction = null;
-
-        do {
-
-            for (State state : stateList) {
-
-                currentV = accumulatedValues.get(state);
-                ArrayList<Double> valuesList = new ArrayList<>();
-
-                for (Action action : actionList) {
-
-                    Tuple stateActionTuple = new Tuple(state, action);
-
-                    for (Action validAction : state.getValidActionList()) {
-
-                        if(action.getNextCity().id == validAction.getNextCity().id){
-
-                            double q = functionQ(state, action);
-                            valuesList.add(q);
-
-                            if (q > maxQ) {
-
-                                maxQ = q;
-                                bestAction = action;
-
-                                if(bestAction == null){ //TODO: rimuovi codice debug
-
-                                    int i = 0;
-                                }
-                            }
-
-                            tableQ.put(stateActionTuple, q); //TODO: controllare se serve
-                        }
-
-                    }
-
-                }
-
-                accumulatedValues.put(state, maxQ);
-                best.put(state, bestAction);
-            }
-        }
-        while (Math.abs(currentV - maxQ) <= STOPPING_CRITERION);
-    }*/
-
-
     public State getState(City currentCity, City possibleDestination){
 
         for (State state : stateList) {
 
-            if(currentCity.equals(state.getStartingCity()) && (possibleDestination == state.getDestination() || possibleDestination.equals(state.getDestination()))){
+            if(currentCity.equals(state.getCurrentCity()) &&
+                    (possibleDestination == state.getTaskDestination() || possibleDestination.equals(state.getTaskDestination()))){
 
                 return state;
 
@@ -294,20 +238,24 @@ public class Reinforcement {
     }
 
 
-    public Map<State, Double> getAccumulatedValues() {
-        return new HashMap<>(accumulatedValues);
-        //TODO: vedere se funziona la copia
-    }
-
-    public Map<State, Action> getBest(){
-        return best;
-    }
-
     public City getNextBestCity(State state) {
 
-        Action action = best.get(state);
-
+        Action action = bestActionPerStateMap.get(state);
         return action.getNextCity();
-        //TODO: vedere se funziona la copia
+    }
+
+    public City getWorstCity(State state){
+
+       double minValue = Collections.min(mapQ.get(state).values());
+
+        for (Map.Entry<Action, Double> actionDoubleEntry : mapQ.get(state).entrySet()) {
+
+            if(actionDoubleEntry.getValue().equals(minValue)){
+                return actionDoubleEntry.getKey().getNextCity();
+            }
+        }
+
+        throw new IllegalArgumentException("error: no worst action found");
+
     }
 }

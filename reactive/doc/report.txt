@@ -1,0 +1,63 @@
+Per poter comprendere come rappresentare il mondo del problema assegnato, siamo partiti considerando la specifica del metodo "act()" della piattaforma Logist, dove viene detto che il metodo viene chiamato quando l'agente arriva in una città e non sta trasportando un task (o lo ha appena consegnato, oppure non ha alcun task). 
+
+RAPPRESENTAZIONE STATI
+
+Arrivato nella città X, l'agente può solamente vedere se è disponibile un task o meno, dunque il suo stato attuale è descritto da (città attuale, possibile città di destinazione del task). Ovviamente la possibile città di destinazione del task può essere nulla. 
+
+RAPPRESENTAZIONE AZIONI
+
+Dallo stato attuale, l'agente può cambiare stato attraverso l'azione "vai a città Y". Ogni stato è legato ad un set di azioni valide, che considerano ovviamente le città vicine alla città attuale dello stato corrente e la città di destinazione se essa è diversa da Null.
+
+TRANSITION FUNCTION
+
+Considerati lo stato corrente s, l'azione valida a(nextCity), uno stato prossimo s' e che P(x,y) è probabilità che vi sia un task  da città x a città y, la nostra transtion function è tale:
+
+\begin{equation}
+T(s,a,s') = P(a.nextCity, s'.possibleDestination) 
+\end{equation}
+
+Ciò è valido anche se la possibleDestination dello stato s' è null, poiché con P(x, null) viene calcolata la probabilità che nella città X non vi sia un task.
+
+REWARD FUNCTION
+
+Considerato uno stato attuale s, un'azione 'a' e che reward(x,y) indica la funzione reward all'interno della classe TaskDistribution che ritorna la reward media che si ottiene consegnando un task da città x a città y, la reward function è tale:
+
+\begin{equation}
+R(s,a) = reward(s.currentCity, a.nextCity) - s.currentCity.distanceTo(a.nextCity)*costPerKm()    iff s.possibleDestination is equal to a.next city
+
+R(s,a) = - s.currentCity.distanceTo(a.nextCity)*costPerKm() iff s.possibleDestination is not equal to a.nextCity
+\end{equation}
+
+//////////////////////
+
+In order to understand how to represent the world of the problem, we started by considering the "act ()" method of the Logist platform, where it is said that the method is called when the agent arrives in a city and is not carrying a task or it has just delivered it, or it has no task).
+
+STATE REPRESENTATION
+
+Arrived in the X city, the agent can only see whether a task is available or not, so its current state is described by (currentCity, possibleDestination city of the task). Obviously, the possible destination city of the task can be Null f there is no task available.
+
+ACTION REPRESENTATION
+
+From the current state, the agent can change state through the "go to town Y" action. Each state is tied to a set of valid actions. this set contains which the actions with the neighbour cities of the currenCity of the current state and the possibleDestination city if it is different from Null.
+
+TRANSITION FUNCTION
+
+Considering the current state s, the action 'a', the next state s' and that P (x, y) is the probability that there is a task from city x to city y, our transtion function is such:
+
+\begin{equation}
+T(s,a,s') = P(a.nextCity, s'.possibleDestination) 
+\end{equation}
+
+This is also true if the possibleDestination of the state s' is null, since with P(x, null) is calculated the probability that there is no task in the city x.
+
+REWARD FUNCTION
+
+Considering the current state s, the action 'a' and that reward (x, y) indicates the reward function that returns the average reward obtained by handing a task from city x to city y, the reward function is such:
+
+\begin{equation}
+R(s,a) = reward(s.currentCity, a.nextCity) - s.currentCity.distanceTo(a.nextCity)*costPerKm()    iff s.possibleDestination is equal to a.next city
+
+R(s,a) = - s.currentCity.distanceTo(a.nextCity)*costPerKm() iff s.possibleDestination is not equal to a.nextCity
+\end{equation}
+
+
