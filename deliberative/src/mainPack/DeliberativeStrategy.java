@@ -4,6 +4,7 @@ import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
+import logist.topology.Topology;
 import logist.topology.Topology.City;
 
 import java.util.*;
@@ -61,21 +62,27 @@ public class DeliberativeStrategy {
 
             // Pop the node I want to work on
             Node currentNode = nodeQueue.pop();
-            State currentState = currentNode.getState();
 
-            // Create all the children
-            for (Action action : actionList) {
+            createAllTheChildren(currentNode, nodeQueue);
 
-                if (currentState.isActionPossible(action)) {
+        }
+    }
 
-                    State childState = createState(currentNode.getState(), action);
+    private void createAllTheChildren(Node currentNode, Deque<Node> nodeQueue) {
 
-                    Node child = currentNode.addChild(childState);
+        State currentState = currentNode.getState();
 
-                    nodeQueue.push(child);
-                }
+        // Create all the children
+        for (Action action : actionList) {
+
+            if (currentState.isActionPossible(action)) {
+
+                State childState = createState(currentNode.getState(), action);
+
+                Node child = currentNode.addChild(childState);
+
+                nodeQueue.push(child);
             }
-
         }
     }
 
@@ -123,10 +130,16 @@ public class DeliberativeStrategy {
     }
 
 
-    public void createActions() {
+    public void createActions(Topology topology) {
 
-        //TODO: create actions
+        for (City city : topology.cities()) {
 
-        this.actionList = null;
+            Action action1 = new Action(city, true);
+            Action action2 = new Action(city, false);
+
+            this.actionList.add(action1);
+            this.actionList.add(action2);
+        }
+
     }
 }
