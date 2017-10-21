@@ -4,6 +4,7 @@ import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
+import logist.topology.Topology;
 import logist.topology.Topology.City;
 
 import java.util.*;
@@ -63,8 +64,6 @@ public class DeliberativeStrategy {
             Node currentNode = nodeQueue.pop();
 
             createAllTheChildren(currentNode, nodeQueue);
-
-
 
         }
     }
@@ -131,10 +130,16 @@ public class DeliberativeStrategy {
     }
 
 
-    public void createActions() {
+    public void createActions(Topology topology) {
 
-        //TODO: create actions
+        for (City city : topology.cities()) {
 
-        this.actionList = null;
+            Action action1 = new Action(city, true);
+            Action action2 = new Action(city, false);
+
+            this.actionList.add(action1);
+            this.actionList.add(action2);
+        }
+
     }
 }
