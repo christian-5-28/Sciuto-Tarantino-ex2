@@ -43,13 +43,22 @@ public class State {
         if (action.getDestination().equals(currentCity)) return false;
 
         // Goal state
-        if (availableTasks.size() == 0 && currentTasks.size() == 0) return false;
+        if (availableTasks.isEmpty() && currentTasks.isEmpty()) return false;
 
-        if (action.getActionType() == Action.ActionType.PICKUP_AND_MOVE) {
+        int currentCapacity = availableCapacity;
+
+        // Adding more free weight if the agent is delivering a task
+        for (Task task : currentTasks) {
+            if (task.deliveryCity.equals(action.getDestination())) {
+                currentCapacity += task.weight;
+            }
+        }
+
+        if (action.isPickup()) {
 
             for (Task availableTask : availableTasks) {
                 if (availableTask.pickupCity.equals(currentCity)
-                        && availableCapacity >= availableTask.weight) {
+                        && currentCapacity >= availableTask.weight) {
 
                     return true;
                 }

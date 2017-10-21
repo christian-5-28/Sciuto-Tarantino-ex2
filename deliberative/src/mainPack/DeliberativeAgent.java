@@ -7,7 +7,6 @@ import logist.simulation.Vehicle;
 import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
-import template.DeliberativeTemplate;
 
 /**
  * Created by lorenzotara on 21/10/17.
@@ -74,6 +73,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
             // This cannot happen for this simple agent, but typically
             // you will need to consider the carriedTasks when the next
             // plan is computed.
+            //TODO: qua chiamare strategy.bfs/astar con terzo parametro carriedTasks
         }
     }
 }
