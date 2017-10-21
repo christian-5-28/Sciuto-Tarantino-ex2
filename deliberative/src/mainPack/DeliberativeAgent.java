@@ -43,7 +43,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
         // ...
 
-        strategy.createActions(topology);
+        strategy = new DeliberativeStrategy(topology);
     }
 
     @Override

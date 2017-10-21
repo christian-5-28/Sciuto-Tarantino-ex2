@@ -1,5 +1,6 @@
 package mainPack;
 
+import logist.plan.Action;
 import logist.task.Task;
 import logist.topology.Topology.City;
 
@@ -10,16 +11,23 @@ import java.util.List;
  */
 public class State {
 
+    private int availableCapacity;
+    private double distanceCost;
+
     private City currentCity;
     private List<Task> availableTasks;
     private List<Task> currentTasks;
-    private int availableCapacity;
+    private List<Action> actionsAlreadyExecuted;
 
-    public State(City currentCity, List<Task> availableTasks, List<Task> currentTasks, int availableCapacity) {
+
+    public State(City currentCity, List<Task> availableTasks, List<Task> currentTasks,
+                 List<Action> actionsAlreadyExecuted, int availableCapacity, double distanceCost) {
         this.currentCity = currentCity;
         this.availableTasks = availableTasks;
         this.currentTasks = currentTasks;
+        this.actionsAlreadyExecuted = actionsAlreadyExecuted;
         this.availableCapacity = availableCapacity;
+        this.distanceCost = distanceCost;
     }
 
     public City getCurrentCity() {
@@ -38,9 +46,9 @@ public class State {
         return availableCapacity;
     }
 
-    public boolean isActionPossible(Action action) {
+    public boolean isActionPossible(DeliberativeAction deliberativeAction) {
 
-        if (action.getDestination().equals(currentCity)) return false;
+        if (deliberativeAction.getDestination().equals(currentCity)) return false;
 
         // Goal state
         if (availableTasks.isEmpty() && currentTasks.isEmpty()) return false;
@@ -49,12 +57,12 @@ public class State {
 
         // Adding more free weight if the agent is delivering a task
         for (Task task : currentTasks) {
-            if (task.deliveryCity.equals(action.getDestination())) {
+            if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
                 currentCapacity += task.weight;
             }
         }
 
-        if (action.isPickup()) {
+        if (deliberativeAction.isPickup()) {
 
             for (Task availableTask : availableTasks) {
                 if (availableTask.pickupCity.equals(currentCity)
@@ -71,4 +79,11 @@ public class State {
     }
 
 
+    public List<Action> getActionsAlreadyExecuted() {
+        return actionsAlreadyExecuted;
+    }
+
+    public double getDistanceCost() {
+        return distanceCost;
+    }
 }

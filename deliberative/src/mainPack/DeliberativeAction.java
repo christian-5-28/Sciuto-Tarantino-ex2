@@ -5,7 +5,7 @@ import logist.topology.Topology.City;
 /**
  * Created by lorenzotara on 20/10/17.
  */
-public class Action {
+public class DeliberativeAction {
 
     /*enum ActionType {
         PICKUP_AND_MOVE,
@@ -15,7 +15,7 @@ public class Action {
     private City destination;
     private boolean pickup;
 
-    public Action(City destination, boolean pickup) {
+    public DeliberativeAction(City destination, boolean pickup) {
         this.destination = destination;
         this.pickup = pickup;
     }
