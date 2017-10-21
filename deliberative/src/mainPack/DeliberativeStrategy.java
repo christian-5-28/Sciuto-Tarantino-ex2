@@ -61,21 +61,29 @@ public class DeliberativeStrategy {
 
             // Pop the node I want to work on
             Node currentNode = nodeQueue.pop();
-            State currentState = currentNode.getState();
 
-            // Create all the children
-            for (Action action : actionList) {
+            createAllTheChildren(currentNode, nodeQueue);
 
-                if (currentState.isActionPossible(action)) {
 
-                    State childState = createState(currentNode.getState(), action);
 
-                    Node child = currentNode.addChild(childState);
+        }
+    }
 
-                    nodeQueue.push(child);
-                }
+    private void createAllTheChildren(Node currentNode, Deque<Node> nodeQueue) {
+
+        State currentState = currentNode.getState();
+
+        // Create all the children
+        for (Action action : actionList) {
+
+            if (currentState.isActionPossible(action)) {
+
+                State childState = createState(currentNode.getState(), action);
+
+                Node child = currentNode.addChild(childState);
+
+                nodeQueue.push(child);
             }
-
         }
     }
 
