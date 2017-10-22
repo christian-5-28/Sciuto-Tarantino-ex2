@@ -7,6 +7,18 @@
 	<agent name="deliberative-random">
 		<set class-path="bin/"/>
 		<set class-name="mainPack.DeliberativeAgent"/>
+		<set algorithm="ASTAR"/>
+	</agent>
+
+	<agent name="deliberative-random1">
+		<set class-path="bin/"/>
+		<set class-name="mainPack.DeliberativeAgent"/>
+		<set algorithm="BFS"/>
+	</agent>
+
+	<agent name="deliberative-random2">
+		<set class-path="bin/"/>
+		<set class-name="mainPack.DeliberativeAgent"/>
 		<set algorithm="BFS"/>
 	</agent>
 

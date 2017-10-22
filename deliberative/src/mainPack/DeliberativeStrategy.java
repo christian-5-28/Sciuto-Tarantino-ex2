@@ -16,6 +16,7 @@ public class DeliberativeStrategy {
 
     private List<State> goalStateList;
     private List<DeliberativeAction> actionList;
+    private double costPerKm;
 
     public DeliberativeStrategy() {
         this.goalStateList = new ArrayList<>();
@@ -23,11 +24,16 @@ public class DeliberativeStrategy {
         //createActions(topology);
     }
 
-    /*public Plan astar(Vehicle vehicle, TaskSet tasks) {
+    public Plan astar(Vehicle vehicle, TaskSet tasks) {
 
-        List<State> openList = new ArrayList<>();
+        goalStateList = new ArrayList<>();
 
-        Set<State> closedList = new HashSet<>();
+        LinkedList<State> openList = new LinkedList<>();
+
+        Set<State> closedSet = new HashSet<>();
+
+        //TODO: added
+        this.costPerKm = vehicle.costPerKm();
 
         City currentCity = vehicle.getCurrentCity();
         List<Task> availableTasks = new ArrayList<>(tasks);
@@ -38,35 +44,114 @@ public class DeliberativeStrategy {
 
         openList.add(root);
 
-        boolean targetFound = false;
+        int iter = 0;
 
-        while (!targetFound) {
+        /// Almost RIGHT ONE
+
+        while (!openList.isEmpty()) {
+
+            State current = openList.pop();
+
+            System.out.println(iter);
+
+            if (isGoalState(current)) {
+                goalStateList.add(current);
+                break;
+            }
+
+            //openList.remove(current);
+            if (!closedSet.contains(current)) {
+                closedSet.add(current);
+            }
+
+            for (State child : getAllChildren(current)) {
+
+                if (closedSet.contains(child)) continue;
+
+                if (!openList.contains(child)) {
+
+                    openList.add(child);
+
+                }
+
+                double tentative_gScore = current.getDistanceCost() + current.getCurrentCity().distanceTo(child.getCurrentCity());
+
+
+                if (closedSet.contains(child) && !compare(tentative_gScore, closedSet, child)) {
+                    closedSet.remove(child);
+                    closedSet.add(child);
+                }
+
+            }
+
+            Collections.sort(openList, State.compareByTotalCost);
+            iter++;
+
+        }
+
+        State finalState = goalStateList.get(0);
+        return new Plan(currentCity, finalState.getActionsAlreadyExecuted());
+
+
+
+
+
+        /* boolean targetFound = false;
+        while (true) {
 
             State nextMove = findBestMove(openList);
+
+            System.out.println("Mossa scelta\n\n");
+            System.out.println(nextMove.getCurrentCity());
+            System.out.println(nextMove.getAvailableTasks());
+            System.out.println(nextMove.getCurrentTasks());
+            System.out.println("\n");
+
+            targetFound = isGoalState(nextMove);
+
+            if (targetFound) {
+                goalStateList.add(nextMove);
+                break;
+            }
 
             openList.remove(nextMove);
 
             closedList.add(nextMove);
 
-            targetFound = isGoalState(nextMove);
+            List<State> nextMoveChildren = getAllChildren(nextMove);
 
-            List<State> nextMoveChildren = getChildren(nextMove);
+            System.out.println("\n\nFigli\n\n");
+            for (State nextMoveChild : nextMoveChildren) {
+                System.out.println(nextMoveChild.getCurrentCity());
+                System.out.println(nextMoveChild.getAvailableTasks());
+                System.out.println(nextMoveChild.getCurrentTasks());
+                System.out.println("\n");
+            }
 
             // Every child is walkable
             // No child can be already in the openList
-            for (State nextMoveChild : nextMoveChildren) {
+            openList.addAll(nextMoveChildren);
 
-                openList.add(nextMoveChild);
+        }*/
+
+
+
+    }
+
+    private boolean compare(double tentative, Set<State> closedSet, State child) {
+
+        for (State state : closedSet) {
+            if (state.equals(child)) {
+                return tentative >= state.getDistanceCost();
             }
-
         }
 
-        return null;
+        return false;
     }
 
 
 
-    private State findBestMove(List<State> openList) {
+    /*private State findBestMove(List<State> openList) {
 
         State bestMove = null;
         double bestMoveCost = Double.POSITIVE_INFINITY;
@@ -76,41 +161,38 @@ public class DeliberativeStrategy {
             double moveCost = calculateCost(possibleMove);
 
             // Finding the best possible move from current position
-            if (calculateCost(possibleMove) < bestMoveCost) {
+            if (moveCost < bestMoveCost) {
                 bestMove = possibleMove;
                 bestMoveCost = moveCost;
             }
         }
 
         return bestMove;
-    }
+    }*/
 
 
 
-    private double calculateCost(State bestMove) {
+    /*private double calculateCost(State bestMove) {
 
-        double G = bestMove.getDistanceCost();
-        double H = heuristic(bestMove);
+        double g = bestMove.getDistanceCost();
+        double h = heuristic(bestMove);
 
-        return G + H;
-    }
+        return g + h;
+    }*/
 
     private double heuristic(State bestMove) {
 
         double avTaskMaxCost = 0;
-        Task maxAvTask = null;
 
         for (Task availableTask : bestMove.getAvailableTasks()) {
-            double cost = availableTask.pathLength();
+            double cost = availableTask.pathLength() + bestMove.getCurrentCity().distanceTo(availableTask.pickupCity);
 
             if (cost > avTaskMaxCost) {
                 avTaskMaxCost = cost;
-                maxAvTask = availableTask;
             }
         }
 
         double currTaskMaxCost = 0;
-        Task maxCurrTask = null;
 
         for (Task currentTask : bestMove.getCurrentTasks()) {
 
@@ -118,19 +200,14 @@ public class DeliberativeStrategy {
 
             if (cost > currTaskMaxCost) {
                 currTaskMaxCost = cost;
-                maxCurrTask = currentTask;
             }
         }
 
-        List<City> cityP = maxAvTask.path();
-        List<City> cityD = maxCurrTask.path();
+        bestMove.updateTotalCost(Math.max(currTaskMaxCost, avTaskMaxCost));
 
-        Set<City> allCities = new HashSet<>();
-        allCities.addAll(cityP);
-        allCities.addAll(cityD);
+        return Math.max(currTaskMaxCost, avTaskMaxCost);
 
-
-    }*/
+    }
 
     public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
@@ -222,60 +299,8 @@ public class DeliberativeStrategy {
     }
 
 
-   /* public Plan bfs(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
-        List<Task> carriedTasks = new ArrayList<>(currentTasks);
-        createTree(vehicle, availabletasks, carriedTasks);
-        return null;
-    }
 
-    public void createTreeRoot(Vehicle vehicle, TaskSet tasks) {
-        List<Task> currentTasks = new ArrayList<>(tasks);
-        createTree(vehicle, tasks, currentTasks);
-    }
-
-    public void createTree(Vehicle vehicle, TaskSet freeTasks, List<Task> carriedTasks) {
-
-        City currentCity = vehicle.getCurrentCity();
-        List<Task> availableTasks = new ArrayList<>(freeTasks);
-        List<Task> currentTasks = new ArrayList<>(carriedTasks);
-
-        this.root = new Node(new State(currentCity, availableTasks, currentTasks, vehicle.capacity()), null);
-
-        Deque<Node> nodeQueue = new ArrayDeque<>();
-
-        nodeQueue.addFirst(root);
-
-        // Until the queue is not empty
-        while (!nodeQueue.isEmpty()) {
-
-            // Pop the node I want to work on
-            Node currentNode = nodeQueue.pop();
-
-            //createAllTheChildren(currentNode, nodeQueue);
-
-        }
-    }*/
-
-    /*private List<State> getChildren(State currentState) {
-
-        List<State> stateList = new ArrayList<>();
-
-        // Create all the children
-        for (DeliberativeAction deliberativeAction : actionList) {
-
-            if (currentState.isActionPossible(deliberativeAction)) {
-
-                State childState = createState(currentState, deliberativeAction);
-
-                stateList.add(childState);
-            }
-        }
-
-        return stateList;
-    }*/
-
-
-    List<State> getAllChildren(State currentState){
+    public List<State> getAllChildren(State currentState){
 
         List<State> childrenList = new ArrayList<>();
 
@@ -324,6 +349,8 @@ public class DeliberativeStrategy {
             }
 
             State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
+            //TODO: togliere
+            heuristic(childState);
 
             childrenList.add(childState);
 
@@ -388,6 +415,7 @@ public class DeliberativeStrategy {
 
     }*/
 
+/*
     private List<State> getDeliveryChildren(State currentState) {
 
         List<State> childrenList = new ArrayList<>();
@@ -414,7 +442,8 @@ public class DeliberativeStrategy {
 
             availableCapacity += currentTask.weight;
 
-            /**
+            */
+/**
              * here we check if there is an available task in the delivery city that can be taken only after we
              * have delivered the task.
 
@@ -428,12 +457,14 @@ public class DeliberativeStrategy {
                     availableTasks.remove(availableTask);
                     availableCapacity -= availableTask.weight;
 
-                    /**
+                    */
+/**
                      * We assume that only one task can be in the delivery city
 
                     break;
                 }
-            } */
+            } *//*
+
 
             State childState = new State(currentTask.deliveryCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
 
@@ -457,11 +488,13 @@ public class DeliberativeStrategy {
             int availableCapacity = currentState.getAvailableCapacity();
 
 
-            /**
+            */
+/**
              * for each task that can be taken cosnsidering its weight we add to the actionExecuted List
              * all the Move action in order to arrive in the pickUp city and the PickupAction. then, we
              * update the distanceCost, the availableTask and currentTask lists
-             */
+             *//*
+
             if(availableTask.weight <= currentState.getAvailableCapacity()){
 
                 for (City city : currentState.getCurrentCity().pathTo(availableTask.pickupCity)) {
@@ -478,9 +511,11 @@ public class DeliberativeStrategy {
                 availableTasks.remove(availableTask);
                 currentTasks.add(availableTask);
 
-                /**
+                */
+/**
                  * Finally, we create the new child state and we add it to the childrenList
-                 */
+                 *//*
+
                 State childState = new State(availableTask.pickupCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
                 childrenList.add(childState);
             }
@@ -490,6 +525,7 @@ public class DeliberativeStrategy {
         return childrenList;
 
     }
+*/
 
 
     /*public State createState(State currentState, DeliberativeAction deliberativeAction) {

@@ -4,6 +4,7 @@ import logist.plan.Action;
 import logist.task.Task;
 import logist.topology.Topology.City;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -13,10 +14,12 @@ public class State {
 
     private int availableCapacity;
     private double distanceCost;
+    private double totalCost;
 
     private City currentCity;
     private List<Task> availableTasks;
     private List<Task> currentTasks;
+    private double heuristic;
 
     @Override
     public boolean equals(Object o) {
@@ -107,11 +110,38 @@ public class State {
     }*/
 
 
+    public static Comparator<State> compareByTotalCost = new Comparator<State>() {
+        @Override
+        public int compare(State s1, State s2) {
+            return s1.compareTo(s2);
+        }
+    };
+
+    public int compareTo(State state) {
+        // descending
+        return (int) (this.totalCost - state.totalCost);
+
+    }
+
+
     public List<Action> getActionsAlreadyExecuted() {
         return actionsAlreadyExecuted;
     }
 
     public double getDistanceCost() {
         return distanceCost;
+    }
+
+    public void updateTotalCost(double heuristic) {
+        this.heuristic = heuristic;
+        this.totalCost = heuristic + distanceCost;
+    }
+
+    public double getTotalCost() {
+        return totalCost;
+    }
+
+    public double getHeuristic() {
+        return heuristic;
     }
 }
