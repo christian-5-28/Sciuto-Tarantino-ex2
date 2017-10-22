@@ -24,16 +24,121 @@ public class DeliberativeStrategy {
         createActions(topology);
     }
 
-    public Plan astar(Vehicle vehicle, TaskSet tasks) {
-        //createTreeRoot(vehicle, tasks);
+    /*public Plan astar(Vehicle vehicle, TaskSet tasks) {
+
+        List<State> openList = new ArrayList<>();
+
+        Set<State> closedList = new HashSet<>();
+
+        City currentCity = vehicle.getCurrentCity();
+        List<Task> availableTasks = new ArrayList<>(tasks);
+        List<Task> currentTasks = new ArrayList<>();
+        List<Action> actionAlreadyExecuted = new ArrayList<>();
+
+        State root = new State(currentCity, availableTasks, currentTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
+
+        openList.add(root);
+
+        boolean targetFound = false;
+
+        while (!targetFound) {
+
+            State nextMove = findBestMove(openList);
+
+            openList.remove(nextMove);
+
+            closedList.add(nextMove);
+
+            targetFound = isGoalState(nextMove);
+
+            List<State> nextMoveChildren = getChildren(nextMove);
+
+            // Every child is walkable
+            // No child can be already in the openList
+            for (State nextMoveChild : nextMoveChildren) {
+
+                openList.add(nextMoveChild);
+            }
+
+        }
+
         return null;
     }
+
+
+
+    private State findBestMove(List<State> openList) {
+
+        State bestMove = null;
+        double bestMoveCost = Double.POSITIVE_INFINITY;
+
+        for (State possibleMove : openList) {
+
+            double moveCost = calculateCost(possibleMove);
+
+            // Finding the best possible move from current position
+            if (calculateCost(possibleMove) < bestMoveCost) {
+                bestMove = possibleMove;
+                bestMoveCost = moveCost;
+            }
+        }
+
+        return bestMove;
+    }
+
+
+
+    private double calculateCost(State bestMove) {
+
+        double G = bestMove.getDistanceCost();
+        double H = heuristic(bestMove);
+
+        return G + H;
+    }
+
+    private double heuristic(State bestMove) {
+
+        double avTaskMaxCost = 0;
+        Task maxAvTask = null;
+
+        for (Task availableTask : bestMove.getAvailableTasks()) {
+            double cost = availableTask.pathLength();
+
+            if (cost > avTaskMaxCost) {
+                avTaskMaxCost = cost;
+                maxAvTask = availableTask;
+            }
+        }
+
+        double currTaskMaxCost = 0;
+        Task maxCurrTask = null;
+
+        for (Task currentTask : bestMove.getCurrentTasks()) {
+
+            double cost = currentTask.pathLength();
+
+            if (cost > currTaskMaxCost) {
+                currTaskMaxCost = cost;
+                maxCurrTask = currentTask;
+            }
+        }
+
+        List<City> cityP = maxAvTask.path();
+        List<City> cityD = maxCurrTask.path();
+
+        Set<City> allCities = new HashSet<>();
+        allCities.addAll(cityP);
+        allCities.addAll(cityD);
+
+
+    }*/
 
     public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
         //createTree(vehicle, availabletasks, carriedTasks);
         return null;
     }
+
 
     public Plan bfs(Vehicle vehicle, TaskSet tasks) {
 
@@ -52,21 +157,31 @@ public class DeliberativeStrategy {
 
         while (!notVisitedQueue.isEmpty()){
 
+            if (notVisitedQueue.size() > 1000000) {
+                System.out.println(notVisitedQueue.size());
+            }
+
             State currentState = notVisitedQueue.pop();
 
             if(isGoalState(currentState)){
                 goalStateList.add(currentState);
             }
 
-            for (State child : getChildren(currentState)) {
+            else {
 
-                if(visitedNodesSet.contains(child)){
-                    continue;
+                for (State child : getChildren(currentState)) {
+
+                    if(visitedNodesSet.contains(child)) {
+                        continue;
+                    }
+
+                    if(!notVisitedQueue.contains(child)) {
+                        notVisitedQueue.push(child);
+                    }
+
+                    visitedNodesSet.add(currentState);
+
                 }
-                if(!notVisitedQueue.contains(child)){
-                    notVisitedQueue.push(child);
-                }
-                visitedNodesSet.add(currentState);
             }
         }
 

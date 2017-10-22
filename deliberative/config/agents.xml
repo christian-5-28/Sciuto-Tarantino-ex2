@@ -9,5 +9,6 @@
 		<set class-name="mainPack.DeliberativeAgent"/>
 		<set algorithm="BFS"/>
 	</agent>
+
 	
 </agents>
