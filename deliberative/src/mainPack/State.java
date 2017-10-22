@@ -17,6 +17,32 @@ public class State {
     private City currentCity;
     private List<Task> availableTasks;
     private List<Task> currentTasks;
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        State state = (State) o;
+
+        if (getAvailableCapacity() != state.getAvailableCapacity()) return false;
+        if (getCurrentCity() != null ? !getCurrentCity().equals(state.getCurrentCity()) : state.getCurrentCity() != null)
+            return false;
+        if (getAvailableTasks() != null ? !getAvailableTasks().equals(state.getAvailableTasks()) : state.getAvailableTasks() != null)
+            return false;
+        return getCurrentTasks() != null ? getCurrentTasks().equals(state.getCurrentTasks()) : state.getCurrentTasks() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getAvailableCapacity();
+        result = 31 * result + (getCurrentCity() != null ? getCurrentCity().hashCode() : 0);
+        result = 31 * result + (getAvailableTasks() != null ? getAvailableTasks().hashCode() : 0);
+        result = 31 * result + (getCurrentTasks() != null ? getCurrentTasks().hashCode() : 0);
+        return result;
+    }
+
     private List<Action> actionsAlreadyExecuted;
 
 
@@ -46,7 +72,9 @@ public class State {
         return availableCapacity;
     }
 
-    public boolean isActionPossible(DeliberativeAction deliberativeAction) {
+
+
+    /*public boolean isActionPossible(DeliberativeAction deliberativeAction) {
 
         if (deliberativeAction.getDestination().equals(currentCity)) return false;
 
@@ -54,13 +82,6 @@ public class State {
         if (availableTasks.isEmpty() && currentTasks.isEmpty()) return false;
 
         int currentCapacity = availableCapacity;
-
-        // Adding more free weight if the agent is delivering a task
-        for (Task task : currentTasks) {
-            if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
-                currentCapacity += task.weight;
-            }
-        }
 
         if (deliberativeAction.isPickup()) {
 
@@ -72,11 +93,18 @@ public class State {
                 }
             }
 
+        /* Adding more free weight if the agent is delivering a task
+        for (Task task : currentTasks) {
+            if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
+                currentCapacity += task.weight;
+            }
+        }
+
             return false;
         }
 
         return true;
-    }
+    }*/
 
 
     public List<Action> getActionsAlreadyExecuted() {

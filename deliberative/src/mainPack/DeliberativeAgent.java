@@ -43,7 +43,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
         // ...
 
-        strategy = new DeliberativeStrategy(topology);
+        strategy = new DeliberativeStrategy();
     }
 
     @Override
@@ -57,7 +57,14 @@ public class DeliberativeAgent implements DeliberativeBehavior {
                 break;
 
             case BFS:
+
+                double startTime = System.currentTimeMillis();
+
                 plan = strategy.bfs(vehicle, tasks);
+
+                double finishTime = System.currentTimeMillis();
+
+                System.out.println("time to calculate BFS: " + ((finishTime - startTime)/1000) + " seconds");
                 break;
 
             default:
