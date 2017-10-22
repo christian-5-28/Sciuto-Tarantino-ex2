@@ -56,6 +56,15 @@ public class State {
         this.distanceCost = distanceCost;
     }
 
+    public State(City currentCity, List<Task> availableTasks, List<Task> currentTasks,
+                  int availableCapacity, double distanceCost) {
+        this.currentCity = currentCity;
+        this.availableTasks = availableTasks;
+        this.currentTasks = currentTasks;
+        this.availableCapacity = availableCapacity;
+        this.distanceCost = distanceCost;
+    }
+
     public City getCurrentCity() {
         return currentCity;
     }

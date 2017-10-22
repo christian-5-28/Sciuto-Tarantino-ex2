@@ -8,6 +8,8 @@ import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
 
+import java.util.ArrayList;
+
 /**
  * Created by lorenzotara on 21/10/17.
  */
@@ -60,7 +62,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
                 double startTime = System.currentTimeMillis();
 
-                plan = strategy.bfs(vehicle, tasks);
+                plan = strategy.bfs(vehicle, tasks, new ArrayList<>(vehicle.getCurrentTasks()));
 
                 double finishTime = System.currentTimeMillis();
 
@@ -76,11 +78,14 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
     @Override
     public void planCancelled(TaskSet carriedTasks) {
-        if (!carriedTasks.isEmpty()) {
+        /*if (!carriedTasks.isEmpty()) {
             // This cannot happen for this simple agent, but typically
             // you will need to consider the carriedTasks when the next
             // plan is computed.
-            //TODO: qua chiamare strategy.bfs/astar con terzo parametro carriedTasks
-        }
+
+
+        }*/
+
+        //strategy.bfs(agent.vehicles().get(0), )
     }
 }
