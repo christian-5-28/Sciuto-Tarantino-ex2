@@ -16,7 +16,8 @@ public class State {
 
     private City currentCity;
     private List<Task> availableTasks;
-    private List<Task> currentTasks;
+    private List<Task> carriedTasks;
+    private List<Action> actionsAlreadyExecuted;
 
     @Override
     public boolean equals(Object o) {
@@ -31,7 +32,7 @@ public class State {
             return false;
         if (getAvailableTasks() != null ? !getAvailableTasks().equals(state.getAvailableTasks()) : state.getAvailableTasks() != null)
             return false;
-        return getCurrentTasks() != null ? getCurrentTasks().equals(state.getCurrentTasks()) : state.getCurrentTasks() == null;
+        return getCarriedTasks() != null ? getCarriedTasks().equals(state.getCarriedTasks()) : state.getCarriedTasks() == null;
     }
 
     @Override
@@ -39,28 +40,26 @@ public class State {
         int result = getAvailableCapacity();
         result = 31 * result + (getCurrentCity() != null ? getCurrentCity().hashCode() : 0);
         result = 31 * result + (getAvailableTasks() != null ? getAvailableTasks().hashCode() : 0);
-        result = 31 * result + (getCurrentTasks() != null ? getCurrentTasks().hashCode() : 0);
+        result = 31 * result + (getCarriedTasks() != null ? getCarriedTasks().hashCode() : 0);
         return result;
     }
 
-    private List<Action> actionsAlreadyExecuted;
 
-
-    public State(City currentCity, List<Task> availableTasks, List<Task> currentTasks,
+    public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
                  List<Action> actionsAlreadyExecuted, int availableCapacity, double distanceCost) {
         this.currentCity = currentCity;
         this.availableTasks = availableTasks;
-        this.currentTasks = currentTasks;
+        this.carriedTasks = carriedTasks;
         this.actionsAlreadyExecuted = actionsAlreadyExecuted;
         this.availableCapacity = availableCapacity;
         this.distanceCost = distanceCost;
     }
 
-    public State(City currentCity, List<Task> availableTasks, List<Task> currentTasks,
+    public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
                   int availableCapacity, double distanceCost) {
         this.currentCity = currentCity;
         this.availableTasks = availableTasks;
-        this.currentTasks = currentTasks;
+        this.carriedTasks = carriedTasks;
         this.availableCapacity = availableCapacity;
         this.distanceCost = distanceCost;
     }
@@ -73,8 +72,8 @@ public class State {
         return availableTasks;
     }
 
-    public List<Task> getCurrentTasks() {
-        return currentTasks;
+    public List<Task> getCarriedTasks() {
+        return carriedTasks;
     }
 
     public int getAvailableCapacity() {
@@ -88,7 +87,7 @@ public class State {
         if (deliberativeAction.getDestination().equals(currentCity)) return false;
 
         // Goal state
-        if (availableTasks.isEmpty() && currentTasks.isEmpty()) return false;
+        if (availableTasks.isEmpty() && carriedTasks.isEmpty()) return false;
 
         int currentCapacity = availableCapacity;
 
@@ -103,7 +102,7 @@ public class State {
             }
 
         /* Adding more free weight if the agent is delivering a task
-        for (Task task : currentTasks) {
+        for (Task task : carriedTasks) {
             if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
                 currentCapacity += task.weight;
             }

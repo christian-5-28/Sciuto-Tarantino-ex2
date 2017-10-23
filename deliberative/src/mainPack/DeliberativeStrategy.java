@@ -16,7 +16,7 @@ public class DeliberativeStrategy {
 
     private List<State> goalStateList;
 
-    class PathNode{
+    /*class PathNode{
 
         private State parentState;
         private Deque<Action> actionExecuted;
@@ -25,7 +25,7 @@ public class DeliberativeStrategy {
             this.parentState = parentState;
             this.actionExecuted = actionExecuted;
         }
-    }
+    }*/
 
     //private Map<State, PathNode> pathMap;
 
@@ -60,15 +60,13 @@ public class DeliberativeStrategy {
         List<Task> currentTasks = new ArrayList<>(carriedTasks);
         List<Action> actionAlreadyExecuted = new ArrayList<>();
 
-        if(currentCity.name.equals("Basel")){
-            int i = 0;
-        }
-
         State root = new State(currentCity, availableTasks, currentTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
 
         notVisitedQueue.addFirst(root);
 
         int iter = 0;
+
+        State bestGoalState = null;
 
         while (!notVisitedQueue.isEmpty()){
 
@@ -77,9 +75,10 @@ public class DeliberativeStrategy {
 
             if(!visitedNodesSet.contains(currentState)){
 
-                if(isGoalState(currentState)){
+                if(isGoalState(currentState) && (bestGoalState == null || currentState.getDistanceCost() < bestGoalState.getDistanceCost())){
 
-                    goalStateList.add(currentState);
+                    bestGoalState = currentState;
+                    //goalStateList.add(currentState);
 
                 }
 
@@ -105,13 +104,8 @@ public class DeliberativeStrategy {
             iter++;
         }
 
-        return createOptimalPlan(goalStateList, currentCity);
-
-    }
-
-    public Plan bfs(Vehicle vehicle, TaskSet tasks) {
-
-        return bfs(vehicle, tasks, new ArrayList<>());
+        //return createOptimalPlan(goalStateList, currentCity);
+        return new Plan(currentCity, bestGoalState.getActionsAlreadyExecuted());
 
     }
 
@@ -119,11 +113,75 @@ public class DeliberativeStrategy {
     private boolean isGoalState(State currentState) {
 
         return currentState.getAvailableTasks().isEmpty()
-                && currentState.getCurrentTasks().isEmpty();
+                && currentState.getCarriedTasks().isEmpty();
     }
 
 
-    private Plan createOptimalPlan(List<State> goalStateList, City startCity) {
+    List<State> getAllChildren(State currentState){
+
+        List<State> childrenList = new ArrayList<>();
+
+        for (City neighbourCity : currentState.getCurrentCity().neighbors()) {
+
+            double distanceCost = currentState.getDistanceCost();
+            List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
+            List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
+            List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
+            int availableCapacity = currentState.getAvailableCapacity();
+
+            actionsExecuted.add(new Action.Move(neighbourCity));
+
+            distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity);
+
+            for (Task taskTaken : currentState.getCarriedTasks()) {
+
+                if(taskTaken.deliveryCity.equals(neighbourCity)){
+
+                    actionsExecuted.add(new Action.Delivery(taskTaken));
+
+                    currentTasks.remove(taskTaken);
+
+                    availableCapacity += taskTaken.weight;
+
+                }
+
+            }
+
+            for (Task availableTask : currentState.getAvailableTasks()) {
+
+                if(availableTask.pickupCity.equals(neighbourCity) && availableTask.weight <= availableCapacity){
+
+                    actionsExecuted.add(new Action.Pickup(availableTask));
+
+                    availableTasks.remove(availableTask);
+
+                    availableCapacity -= availableTask.weight;
+
+                    currentTasks.add(availableTask);
+
+
+
+                }
+
+            }
+
+            State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
+
+            childrenList.add(childState);
+
+        }
+
+        return childrenList;
+
+    }
+
+    /*public Plan bfs(Vehicle vehicle, TaskSet tasks) {
+
+        return bfs(vehicle, tasks, new ArrayList<>());
+
+    }*/
+
+    /*private Plan createOptimalPlan(List<State> goalStateList, City startCity) {
 
         State bestGoalState = goalStateList.get(0);
 
@@ -136,7 +194,7 @@ public class DeliberativeStrategy {
         return new Plan(startCity, bestGoalState.getActionsAlreadyExecuted());
         //return new Plan(startCity, createPath(pathMap, bestGoalState));
 
-    }
+    }*/
 
     /*private List<Action> createPath(Map<State, PathNode> pathMap, State bestGoalState) {
 
@@ -206,14 +264,14 @@ public class DeliberativeStrategy {
             double distanceCost = currentState.getDistanceCost();
             Deque<Action> actionsExecuted = new ArrayDeque<>();
             List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-            List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
+            List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
             int availableCapacity = currentState.getAvailableCapacity();
 
             actionsExecuted.push(new Action.Move(neighbourCity));
 
             distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity);
 
-            for (Task taskTaken : currentState.getCurrentTasks()) {
+            for (Task taskTaken : currentState.getCarriedTasks()) {
 
                 if (taskTaken.deliveryCity.equals(neighbourCity)) {
 
@@ -253,63 +311,7 @@ public class DeliberativeStrategy {
 
     }*/
 
-    List<State> getAllChildren(State currentState){
 
-        List<State> childrenList = new ArrayList<>();
-
-        for (City neighbourCity : currentState.getCurrentCity().neighbors()) {
-
-            double distanceCost = currentState.getDistanceCost();
-            List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
-            List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-            List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
-            int availableCapacity = currentState.getAvailableCapacity();
-
-            actionsExecuted.add(new Action.Move(neighbourCity));
-
-            distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity);
-
-            for (Task taskTaken : currentState.getCurrentTasks()) {
-
-                if(taskTaken.deliveryCity.equals(neighbourCity)){
-
-                    actionsExecuted.add(new Action.Delivery(taskTaken));
-
-                    currentTasks.remove(taskTaken);
-
-                    availableCapacity += taskTaken.weight;
-
-                }
-
-            }
-
-            for (Task availableTask : currentState.getAvailableTasks()) {
-
-                if(availableTask.pickupCity.equals(neighbourCity) && availableTask.weight <= availableCapacity){
-
-                    actionsExecuted.add(new Action.Pickup(availableTask));
-
-                    availableTasks.remove(availableTask);
-
-                    availableCapacity -= availableTask.weight;
-
-                    currentTasks.add(availableTask);
-
-
-
-                }
-
-            }
-
-            State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
-
-            childrenList.add(childState);
-
-        }
-
-        return childrenList;
-
-    }
 
     /*
     private List<State> getDeliveryPickUpChildren(State currentState) {
@@ -319,7 +321,7 @@ public class DeliberativeStrategy {
         double distanceCost = currentState.getDistanceCost();
         List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
         List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-        List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
+        List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
         int availableCapacity = currentState.getAvailableCapacity();
 
         /**
@@ -367,16 +369,16 @@ public class DeliberativeStrategy {
         
     }*/
 
-    private List<State> getDeliveryChildren(State currentState) {
+    /*private List<State> getDeliveryChildren(State currentState) {
 
         List<State> childrenList = new ArrayList<>();
 
-        for (Task currentTask : currentState.getCurrentTasks()) {
+        for (Task currentTask : currentState.getCarriedTasks()) {
 
             double distanceCost = currentState.getDistanceCost();
             List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
             List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-            List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
+            List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
             int availableCapacity = currentState.getAvailableCapacity();
 
             for (City city : currentState.getCurrentCity().pathTo(currentTask.deliveryCity)) {
@@ -412,7 +414,7 @@ public class DeliberativeStrategy {
 
                     break;
                 }
-            } */
+            }
 
             State childState = new State(currentTask.deliveryCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
 
@@ -421,9 +423,9 @@ public class DeliberativeStrategy {
         }
 
         return childrenList;
-    }
+    }*/
 
-    private List<State> getPickUpChildren(State currentState) {
+    /*private List<State> getPickUpChildren(State currentState) {
 
         List<State> childrenList = new ArrayList<>();
 
@@ -432,7 +434,7 @@ public class DeliberativeStrategy {
             double distanceCost = currentState.getDistanceCost();
             List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
             List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-            List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
+            List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
             int availableCapacity = currentState.getAvailableCapacity();
 
 
@@ -440,7 +442,7 @@ public class DeliberativeStrategy {
              * for each task that can be taken cosnsidering its weight we add to the actionExecuted List
              * all the Move action in order to arrive in the pickUp city and the PickupAction. then, we
              * update the distanceCost, the availableTask and currentTask lists
-             */
+
             if(availableTask.weight <= currentState.getAvailableCapacity()){
 
                 for (City city : currentState.getCurrentCity().pathTo(availableTask.pickupCity)) {
@@ -459,7 +461,7 @@ public class DeliberativeStrategy {
 
                 /**
                  * Finally, we create the new child state and we add it to the childrenList
-                 */
+
                 State childState = new State(availableTask.pickupCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
                 childrenList.add(childState);
             }
@@ -468,7 +470,7 @@ public class DeliberativeStrategy {
 
         return childrenList;
 
-    }
+    }*/
 
 
     /*public State createState(State currentState, DeliberativeAction deliberativeAction) {
@@ -477,10 +479,10 @@ public class DeliberativeStrategy {
         double distanceCost = currentState.getDistanceCost();
         List<Action> actionsExecuted = currentState.getActionsAlreadyExecuted();
         List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
-        List<Task> currentTasks = new ArrayList<>(currentState.getCurrentTasks());
+        List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
         int availableCapacity = currentState.getAvailableCapacity();
 
-        for (Task task : currentState.getCurrentTasks()) {
+        for (Task task : currentState.getCarriedTasks()) {
 
             if (task.deliveryCity.equals(deliberativeAction.getDestination())) {
 
