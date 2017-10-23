@@ -13,7 +13,7 @@
 	<agent name="deliberative-random1">
 		<set class-path="bin/"/>
 		<set class-name="mainPack.DeliberativeAgent"/>
-		<set algorithm="BFS"/>
+		<set algorithm="ASTAR"/>
 	</agent>
 
 	<agent name="deliberative-random2">

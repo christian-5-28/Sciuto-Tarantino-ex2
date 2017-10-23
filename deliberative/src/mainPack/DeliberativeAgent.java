@@ -55,18 +55,26 @@ public class DeliberativeAgent implements DeliberativeBehavior {
         // Compute the plan with the selected algorithm.
         switch (algorithm) {
             case ASTAR:
-                plan = strategy.astar(vehicle, tasks);
+                double startTime = System.currentTimeMillis();
+
+                plan = strategy.astar(vehicle, tasks, new ArrayList<>(vehicle.getCurrentTasks()));
+
+                double finishTime = System.currentTimeMillis();
+
+                System.out.println("time to calculate ASTAR: " + ((finishTime - startTime)/1000) + " seconds");
+
                 break;
 
             case BFS:
 
-                double startTime = System.currentTimeMillis();
+                startTime = System.currentTimeMillis();
 
                 plan = strategy.bfs(vehicle, tasks, new ArrayList<>(vehicle.getCurrentTasks()));
 
-                double finishTime = System.currentTimeMillis();
+                finishTime = System.currentTimeMillis();
 
                 System.out.println("time to calculate BFS: " + ((finishTime - startTime)/1000) + " seconds");
+
                 break;
 
             default:

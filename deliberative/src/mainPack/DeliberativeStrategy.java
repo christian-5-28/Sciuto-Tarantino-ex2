@@ -5,6 +5,7 @@ import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
+import logist.topology.Topology;
 import logist.topology.Topology.City;
 
 import java.util.*;
@@ -38,7 +39,7 @@ public class DeliberativeStrategy {
         //createActions(topology);
     }
 
-    public Plan astar(Vehicle vehicle, TaskSet tasks) {
+    public Plan astar(Vehicle vehicle, TaskSet tasks, List<Task> carriedTasks) {
 
         goalStateList = new ArrayList<>();
 
@@ -51,7 +52,7 @@ public class DeliberativeStrategy {
 
         City currentCity = vehicle.getCurrentCity();
         List<Task> availableTasks = new ArrayList<>(tasks);
-        List<Task> currentTasks = new ArrayList<>();
+        List<Task> currentTasks = carriedTasks;
         List<Action> actionAlreadyExecuted = new ArrayList<>();
 
         State root = new State(currentCity, availableTasks, currentTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
@@ -60,17 +61,18 @@ public class DeliberativeStrategy {
 
         int iter = 0;
 
-        /// Almost RIGHT ONE
+        //RIGHT ONE
 
         while (!openList.isEmpty()) {
 
             State current = openList.pop();
 
-            System.out.println(iter);
-            System.out.println("Mossa scelta\n\n");
-            System.out.println(current.getCurrentCity());
-            System.out.println(current.getAvailableTasks());
-            System.out.println(current.getCurrentTasks());
+            /*System.out.println(iter);
+            System.out.println("\n\nMossa scelta\n\n");*/
+            System.out.println("H Cost: " + current.getHeuristic());
+            /*System.out.println("Current city: " + current.getCurrentCity());
+            System.out.println("Available tasks: " + current.getAvailableTasks());
+            System.out.println("Current tasks: " + current.getCurrentTasks());*/
             System.out.println("\n");
 
 
@@ -111,49 +113,6 @@ public class DeliberativeStrategy {
 
         State finalState = goalStateList.get(0);
         return new Plan(currentCity, finalState.getActionsAlreadyExecuted());
-
-
-
-
-
-        /* boolean targetFound = false;
-        while (true) {
-
-            State nextMove = findBestMove(openList);
-
-            System.out.println("Mossa scelta\n\n");
-            System.out.println(nextMove.getCurrentCity());
-            System.out.println(nextMove.getAvailableTasks());
-            System.out.println(nextMove.getCurrentTasks());
-            System.out.println("\n");
-
-            targetFound = isGoalState(nextMove);
-
-            if (targetFound) {
-                goalStateList.add(nextMove);
-                break;
-            }
-
-            openList.remove(nextMove);
-
-            closedList.add(nextMove);
-
-            List<State> nextMoveChildren = getAllChildren(nextMove);
-
-            System.out.println("\n\nFigli\n\n");
-            for (State nextMoveChild : nextMoveChildren) {
-                System.out.println(nextMoveChild.getCurrentCity());
-                System.out.println(nextMoveChild.getAvailableTasks());
-                System.out.println(nextMoveChild.getCurrentTasks());
-                System.out.println("\n");
-            }
-
-            // Every child is walkable
-            // No child can be already in the openList
-            openList.addAll(nextMoveChildren);
-
-        }*/
-
 
 
     }
@@ -200,7 +159,7 @@ public class DeliberativeStrategy {
         return g + h;
     }*/
 
-    private double heuristic(State bestMove) {
+    private void heuristic(State bestMove) {
 
         double avTaskMaxCost = 0;
 
@@ -225,15 +184,111 @@ public class DeliberativeStrategy {
 
         bestMove.updateTotalCost(Math.max(currTaskMaxCost, avTaskMaxCost));
 
-        return Math.max(currTaskMaxCost, avTaskMaxCost);
+    }
+
+    private void heuristic2(State bestMove) {
+
+        List<Task> currentNotContained = new ArrayList<>();
+        List<Task> availableNotContained = new ArrayList<>();
+
+        extractNotContained(bestMove, currentNotContained, availableNotContained);
+
+        double hCost = 0;
+
+        for (Task task : currentNotContained) {
+            hCost += task.pathLength();
+        }
+
+        for (Task task : availableNotContained) {
+            hCost += task.pathLength();
+        }
+
+        bestMove.updateTotalCost(hCost);
 
     }
 
-    public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
+    private void extractNotContained(State bestMove, List<Task> currentNotContained, List<Task> availableNotContained) {
+
+        List<Task> currentTasks = bestMove.getCurrentTasks();
+        List<Task> availableTasks = bestMove.getAvailableTasks();
+
+        compareTasks(currentTasks, availableTasks, currentNotContained);
+        compareTasks(availableTasks, currentTasks, availableNotContained);
+
+        /*for (Task currentTask : currentTasks) {
+
+            List<City> path = currentTask.path();
+            ArrayList<Task> otherCurrentTasks = new ArrayList<>(currentTasks);
+            otherCurrentTasks.remove(currentTask);
+
+            if (!citiesContained(path, availableTasks)
+                    && !citiesContained(path, otherCurrentTasks)) {
+
+                currentNotContained.add(currentTask);
+            }
+
+        }
+
+        for (Task availableTask : availableTasks) {
+
+            List<City> path = availableTask.path();
+            ArrayList<Task> otherAvailableTasks = new ArrayList<>(availableTasks);
+            otherAvailableTasks.remove(availableTask);
+
+            if (!citiesContained(path, availableTasks)
+                    && !citiesContained(path, otherAvailableTasks)) {
+
+                availableNotContained.add(availableTask);
+            }
+        }*/
+
+    }
+
+    private void compareTasks(List<Task> tasksCompared, List<Task> tasksToCompare, List<Task> finalList) {
+
+        for (Task taskCompared : tasksCompared) {
+
+            List<City> path = taskCompared.path();
+            ArrayList<Task> otherComparedTasks = new ArrayList<>(tasksCompared);
+            otherComparedTasks.remove(taskCompared);
+
+            if (!citiesContained(path, tasksToCompare)
+                    && !citiesContained(path, otherComparedTasks)) {
+
+                finalList.add(taskCompared);
+            }
+
+        }
+
+    }
+
+    private boolean citiesContained(List<City> path, List<Task> comparingTasks) {
+
+        for (Task comparingTask : comparingTasks) {
+
+            List<City> comparingPath = comparingTask.path();
+
+            if (path.size() <= comparingPath.size()) {
+
+                for (City city : path) {
+
+                    if (comparingPath.contains(city)) {
+
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+
+    }
+
+    /*public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
         //createTree(vehicle, availabletasks, carriedTasks);
         return null;
-    }
+    }*/
 
     public Plan bfs(Vehicle vehicle, TaskSet tasks, List<Task> carriedTasks){
 
@@ -490,7 +545,7 @@ public class DeliberativeStrategy {
             }
 
             State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
-            //TODO: togliere
+
             heuristic(childState);
 
             childrenList.add(childState);
