@@ -67,6 +67,12 @@ public class DeliberativeStrategy {
             State current = openList.pop();
 
             System.out.println(iter);
+            System.out.println("Mossa scelta\n\n");
+            System.out.println(current.getCurrentCity());
+            System.out.println(current.getAvailableTasks());
+            System.out.println(current.getCurrentTasks());
+            System.out.println("\n");
+
 
             if (isGoalState(current)) {
                 goalStateList.add(current);
