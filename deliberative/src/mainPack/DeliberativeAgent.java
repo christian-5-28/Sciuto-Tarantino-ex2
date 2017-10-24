@@ -23,7 +23,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
     /* the properties of the agent */
     private Agent agent;
-    int capacity;
+    //int capacity;
     private DeliberativeStrategy strategy;
 
     /* the planning class */
@@ -33,11 +33,11 @@ public class DeliberativeAgent implements DeliberativeBehavior {
     public void setup(Topology topology, TaskDistribution distribution, Agent agent) {
 
         this.topology = topology;
-        this.td = td;
+        this.td = distribution;
         this.agent = agent;
 
         // initialize the planner
-        int capacity = agent.vehicles().get(0).capacity();
+        //int capacity = agent.vehicles().get(0).capacity();
         String algorithmName = agent.readProperty("algorithm", String.class, "ASTAR");
 
         // Throws IllegalArgumentException if algorithm is unknown
@@ -45,7 +45,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
 
         // ...
 
-        strategy = new DeliberativeStrategy();
+        strategy = new DeliberativeStrategy(agent.vehicles().get(0).costPerKm());
     }
 
     @Override

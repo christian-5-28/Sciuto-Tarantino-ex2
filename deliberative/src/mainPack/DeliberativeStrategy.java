@@ -14,6 +14,8 @@ import java.util.*;
  */
 public class DeliberativeStrategy {
 
+    private double vehicleCost;
+
     //private List<State> goalStateList;
 
     /*class PathNode{
@@ -29,7 +31,9 @@ public class DeliberativeStrategy {
 
     //private Map<State, PathNode> pathMap;
 
-    public DeliberativeStrategy() {
+    public DeliberativeStrategy(double vehicleCost) {
+
+        this.vehicleCost = vehicleCost;
 
         //this.pathMap = new HashMap<>();
 
@@ -299,11 +303,11 @@ public class DeliberativeStrategy {
         double hCost = 0;
 
         for (Task task : currentNotContained) {
-            hCost += task.pathLength();
+            hCost += task.pathLength()*vehicleCost;
         }
 
         for (Task task : availableNotContained) {
-            hCost += task.pathLength();
+            hCost += task.pathLength()*vehicleCost;
         }
 
         return hCost;
@@ -321,7 +325,7 @@ public class DeliberativeStrategy {
         double maxCarriedCost = 0.;
         for (Task task : currenState.getCarriedTasks()) {
 
-            double cost = currenState.getCurrentCity().distanceTo(task.deliveryCity);
+            double cost = currenState.getCurrentCity().distanceTo(task.deliveryCity)*vehicleCost;
 
             if( cost > maxCarriedCost)
                 maxCarriedCost = cost;
@@ -330,13 +334,13 @@ public class DeliberativeStrategy {
         double maxAvailableCost = 0.;
         for (Task task : currenState.getAvailableTasks()) {
 
-            double cost = currenState.getCurrentCity().distanceTo(task.pickupCity) + task.pickupCity.distanceTo(task.deliveryCity);
+            double cost = (currenState.getCurrentCity().distanceTo(task.pickupCity) + task.pickupCity.distanceTo(task.deliveryCity))*vehicleCost;
 
             if( cost > maxAvailableCost)
                 maxCarriedCost = cost;
         }
 
-        
+
         return Math.max(maxAvailableCost, maxCarriedCost);
     }
 
@@ -431,7 +435,7 @@ public class DeliberativeStrategy {
 
             //actionsExecuted.add(new Action.Move(neighbourCity));
 
-            distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity);
+            distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity)*vehicleCost;
 
             for (Task taskTaken : currentState.getCarriedTasks()) {
 
@@ -509,7 +513,7 @@ public class DeliberativeStrategy {
             for (Action action : tempNode.actionExecuted) {
 
                 actionList.add(action);
-                
+
             }
 
             tempState = tempNode.parentState;
@@ -667,7 +671,7 @@ public class DeliberativeStrategy {
                 return childrenList;
             }
         }
-        
+
     }*/
 
     /*private List<State> getDeliveryChildren(State currentState) {
