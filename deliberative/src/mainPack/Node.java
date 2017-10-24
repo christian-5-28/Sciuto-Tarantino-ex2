@@ -3,9 +3,7 @@ package mainPack;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by lorenzotara on 21/10/17.
- */
+
 public class Node {
 
     private State state;
@@ -34,23 +32,12 @@ public class Node {
         return finalCost;
     }
 
-    public void setHeuristicCost(double heuristicCost){
-        this.heuristicCost = heuristicCost;
-    }
-
     public double getDistanceCost() {
         return distanceCost;
     }
 
     public double getHeuristicCost() {
         return heuristicCost;
-    }
-
-    public void setState(State state){
-
-        this.state = state;
-        this.distanceCost = state.getDistanceCost();
-
     }
 
     @Override

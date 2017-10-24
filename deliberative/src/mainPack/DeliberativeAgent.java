@@ -10,9 +10,6 @@ import logist.topology.Topology;
 
 import java.util.ArrayList;
 
-/**
- * Created by lorenzotara on 21/10/17.
- */
 public class DeliberativeAgent implements DeliberativeBehavior {
 
     enum Algorithm { BFS, ASTAR }

@@ -9,9 +9,7 @@ import logist.topology.Topology.City;
 
 import java.util.*;
 
-/**
- * Created by lorenzotara on 20/10/17.
- */
+
 public class DeliberativeStrategy {
 
     private double vehicleCost;
@@ -152,25 +150,19 @@ public class DeliberativeStrategy {
                     currentTasks.add(availableTask);
 
                 }
-
             }
 
             State childState = new State(neighbourCity, availableTasks, currentTasks, availableCapacity, distanceCost);
 
             childrenList.add(childState);
-
         }
-
         return childrenList;
-
     }
 
 
     public Plan astar(Vehicle vehicle, TaskSet availabletasks, List<Task> currentTasks) {
 
         Queue<Node> notVisitedQueue = new PriorityQueue<>(new CostComparator());
-
-        //Set<Node> nodesVisitedSet = new HashSet<>();
 
         List<Node> nodesVisitedList = new ArrayList<>();
 
@@ -203,10 +195,10 @@ public class DeliberativeStrategy {
                 for (Node childNode : getAllNodeChildren(currentNode)) {
 
                     /**
-                     * The next list is used in order
+                     * if the nodeVisitedList contains a node with the same state of the childNode but the distanceCost
+                     * of the childNode is less from the distanceCost of the node in the nodeVisitedList, we remove
+                     * the node from the nodeVisitedList, in order to visit the new better node.
                      */
-                    //List<Node> visitedListUnique = new ArrayList<>(nodesVisitedSet);
-
                     if(nodesVisitedList.contains(childNode) && childNode.getDistanceCost() < nodesVisitedList.get(nodesVisitedList.indexOf(childNode)).getDistanceCost()){
                         nodesVisitedList.remove(childNode);
                     }
@@ -227,9 +219,7 @@ public class DeliberativeStrategy {
     }
 
     /**
-     *
-     * 
-     *
+     * Returns the maximum DistanceCost among all the avaiableTasks and the carriedTasks
      */
     private Double heuristic(State currenState) {
 
@@ -255,7 +245,11 @@ public class DeliberativeStrategy {
         return Math.max(maxAvailableCost, maxCarriedCost);
     }
 
-
+    /**
+     *
+     * this method returns the the list of actions done up to the currentNode.
+     *
+     */
     private List<Action> createPath(Node currentNode) {
 
         LinkedList<State> path = new LinkedList<>();
@@ -276,12 +270,21 @@ public class DeliberativeStrategy {
         return actionList;
     }
 
+    /**
+     * this method return the actions for the transition from currentState to the nextState.
+     */
     private List<Action> createActions(State currentState, State nextState) {
 
         List<Action> actionList = new ArrayList<>();
         actionList.add(new Action.Move(nextState.getCurrentCity()));
         int availableCapacity = currentState.getAvailableCapacity();
 
+        /**
+         *
+         * for each task in the carriedTask we check if we can deliver a task in the nextCity, if so,
+         * we add a new Delivery action to the actionList
+         *
+         */
         for (Task task : currentState.getCarriedTasks()) {
 
             if(task.deliveryCity.equals(nextState.getCurrentCity())){
@@ -290,20 +293,22 @@ public class DeliberativeStrategy {
             }
         }
 
+        /**
+         *
+         * for each task in the availableTask we check if we can pick-up a task in the nextCity, if so,
+         * we add a new Pick-Up action to the actionList
+         *
+         */
         for (Task availableTask : currentState.getAvailableTasks()) {
 
             if (availableTask.pickupCity.equals(nextState.getCurrentCity()) && availableTask.weight <= availableCapacity) {
 
                 actionList.add(new Action.Pickup(availableTask));
-
                 availableCapacity -= availableTask.weight;
-
             }
-
         }
 
         return actionList;
-
     }
 
 
