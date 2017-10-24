@@ -9,32 +9,62 @@ import java.util.List;
 public class Node {
 
     private State state;
-    private State father;
-    private List<State> children;
+    private Node father;
+    private double finalCost;
+    private double distanceCost;
+    private double heuristicCost;
 
-    public Node(State state, State father) {
+    public Node(State state, Node father, double heuristicCost) {
         this.state = state;
         this.father = father;
-        this.children = new ArrayList<>();
-    }
-
-    public Node addChild(State child) {
-
-        children.add(child);
-
-        return new Node(child, this.state);
-
+        this.heuristicCost = heuristicCost;
+        this.distanceCost = state.getDistanceCost();
+        this.finalCost = heuristicCost + distanceCost;
     }
 
     public State getState() {
         return state;
     }
 
-    public State getFather() {
+    public Node getFather() {
         return father;
     }
 
-    public List<State> getChildren() {
-        return children;
+    public double getFinalCost() {
+        return finalCost;
+    }
+
+    public void setHeuristicCost(double heuristicCost){
+        this.heuristicCost = heuristicCost;
+    }
+
+    public double getDistanceCost() {
+        return distanceCost;
+    }
+
+    public double getHeuristicCost() {
+        return heuristicCost;
+    }
+
+    public void setState(State state){
+
+        this.state = state;
+        this.distanceCost = state.getDistanceCost();
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Node node = (Node) o;
+
+        return getState() != null ? getState().equals(node.getState()) : node.getState() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getState() != null ? getState().hashCode() : 0;
     }
 }

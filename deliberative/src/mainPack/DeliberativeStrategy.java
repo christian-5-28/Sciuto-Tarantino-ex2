@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class DeliberativeStrategy {
 
-    private List<State> goalStateList;
+    //private List<State> goalStateList;
 
     /*class PathNode{
 
@@ -36,56 +36,353 @@ public class DeliberativeStrategy {
         //createActions(topology);
     }
 
-    public Plan astar(Vehicle vehicle, TaskSet tasks) {
-        //createTreeRoot(vehicle, tasks);
-        return null;
+    private class CostComparator implements Comparator<Node>{
+
+        @Override
+        public int compare(Node o1, Node o2) {
+            if(o1.getFinalCost() < o2.getFinalCost())
+                return -1;
+
+            if(o1.getFinalCost() > o2.getFinalCost())
+                return 1;
+
+            return 0;
+        }
     }
 
-    public Plan astar(Vehicle vehicle, TaskSet availabletasks, TaskSet currentTasks) {
+
+
+    public Plan astar(Vehicle vehicle, TaskSet availabletasks, List<Task> currentTasks) {
+
+        Queue<Node> notVisitedQueue = new PriorityQueue<>(new CostComparator());
+
+        //LinkedList<Node> l = new LinkedList<>();
+
+
+        //Set<State> visitedNodesSet = new HashSet<>();
+
+        //Map<Node, Double> distanceCostMap = new HashMap<>();
+
+        //Map<State, Double> heuristicCostMap = new HashMap<>();
+
+        Set<Node> nodesVisitedSet = new HashSet<>();
+
+        City currentCity = vehicle.getCurrentCity();
+        List<Task> availableTasks = new ArrayList<>(availabletasks);
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
-        //createTree(vehicle, availabletasks, carriedTasks);
-        return null;
+        //List<Action> actionAlreadyExecuted = new ArrayList<>();
+
+       // State root = new State(currentCity, availableTasks, carriedTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
+        State root = new State(currentCity, availableTasks, carriedTasks, vehicle.capacity(), 0);
+
+        //distanceCostMap.put(root, 0.);
+        //double heuristicCost = heuristic(root);
+        //heuristicCostMap.put(root, heuristicCost);
+
+        //totalCostMap.put(root, heuristicCost);
+
+        notVisitedQueue.add(new Node(root, null, heuristic(root)));
+
+        State bestGoalState = null;
+
+        List<Action> actionList = new ArrayList<>();
+
+        int iter = 0;
+
+        while (!notVisitedQueue.isEmpty()){
+
+            Node currentNode = notVisitedQueue.poll();
+
+            State currentState = currentNode.getState();
+
+            if(isGoalState(currentState)){
+                bestGoalState = currentState;
+
+                actionList = createPath(currentNode);
+
+                break;
+
+            }
+
+            if(!nodesVisitedSet.contains(currentNode)){
+
+                nodesVisitedSet.add(currentNode); //TODO: prima questo statement era nel corpo del prossimo if
+
+
+                for (Node childNode : getAllNodeChildren(currentNode)) {
+
+                    //Node childNode = new Node(childState, currentState, heuristic(childState));
+
+                    List<Node> visitedListUnique = new ArrayList<>(nodesVisitedSet);
+
+                    if(visitedListUnique.contains(childNode) && childNode.getDistanceCost() < visitedListUnique.get(visitedListUnique.indexOf(childNode)).getDistanceCost()){
+
+                        nodesVisitedSet.remove(childNode);
+
+                    }
+
+                    if(!notVisitedQueue.contains(childNode)){
+
+
+                        notVisitedQueue.add(childNode);
+
+                    }
+
+                }
+
+            }
+            iter++;
+        }
+
+        System.out.println("number of iterations: " + iter);
+
+        //return new Plan(currentCity, bestGoalState.getActionsAlreadyExecuted());
+
+        return new Plan(currentCity, actionList);
+
+    }
+
+    private List<Action> createPath(Node currentNode) {
+
+        LinkedList<State> path = new LinkedList<>();
+        List<Action> actionList = new ArrayList<>();
+
+        for(Node p = currentNode; p != null; p = p.getFather()){
+            path.addFirst(p.getState());
+        }
+
+        for(int index = 0; index < path.size() - 1; index++){
+
+            State currentState = path.get(index);
+            State nextState = path.get(index + 1);
+
+            actionList.addAll(createActions(currentState, nextState));
+        }
+
+        return actionList;
+    }
+
+    private List<Action> createActions(State currentState, State nextState) {
+
+        List<Action> actionList = new ArrayList<>();
+        actionList.add(new Action.Move(nextState.getCurrentCity()));
+        int availableCapacity = currentState.getAvailableCapacity();
+
+        for (Task task : currentState.getCarriedTasks()) {
+
+            if(task.deliveryCity.equals(nextState.getCurrentCity())){
+                actionList.add(new Action.Delivery(task));
+                availableCapacity += task.weight;
+            }
+        }
+
+        for (Task availableTask : currentState.getAvailableTasks()) {
+
+            if (availableTask.pickupCity.equals(nextState.getCurrentCity()) && availableTask.weight <= availableCapacity) {
+
+                actionList.add(new Action.Pickup(availableTask));
+
+                availableCapacity -= availableTask.weight;
+
+            }
+
+        }
+
+        return actionList;
+
+    }
+
+
+
+    private List<Node> getAllNodeChildren(Node currentNode) {
+
+        List<Node> nodeList = new ArrayList<>();
+        for (State state : getAllChildren(currentNode.getState())) {
+            nodeList.add(new Node(state, currentNode, heuristic(state)));
+        }
+
+        return nodeList;
+    }
+
+    private void extractNotContained(State bestMove, List<Task> currentNotContained, List<Task> availableNotContained) {
+
+        List<Task> currentTasks = bestMove.getCarriedTasks();
+        List<Task> availableTasks = bestMove.getAvailableTasks();
+
+        compareTasks(currentTasks, availableTasks, currentNotContained);
+        compareTasks(availableTasks, currentTasks, availableNotContained);
+
+        /*for (Task currentTask : currentTasks) {
+
+            List<City> path = currentTask.path();
+            ArrayList<Task> otherCurrentTasks = new ArrayList<>(currentTasks);
+            otherCurrentTasks.remove(currentTask);
+
+            if (!citiesContained(path, availableTasks)
+                    && !citiesContained(path, otherCurrentTasks)) {
+
+                currentNotContained.add(currentTask);
+            }
+
+        }
+
+        for (Task availableTask : availableTasks) {
+
+            List<City> path = availableTask.path();
+            ArrayList<Task> otherAvailableTasks = new ArrayList<>(availableTasks);
+            otherAvailableTasks.remove(availableTask);
+
+            if (!citiesContained(path, availableTasks)
+                    && !citiesContained(path, otherAvailableTasks)) {
+
+                availableNotContained.add(availableTask);
+            }
+        }*/
+
+    }
+
+    private void compareTasks(List<Task> tasksCompared, List<Task> tasksToCompare, List<Task> finalList) {
+
+        for (Task taskCompared : tasksCompared) {
+
+            List<City> path = taskCompared.path();
+            ArrayList<Task> otherComparedTasks = new ArrayList<>(tasksCompared);
+            otherComparedTasks.remove(taskCompared);
+
+            if (!citiesContained(path, tasksToCompare)
+                    && !citiesContained(path, otherComparedTasks)) {
+
+                finalList.add(taskCompared);
+            }
+
+        }
+
+    }
+
+    private boolean citiesContained(List<City> path, List<Task> comparingTasks) {
+
+        for (Task comparingTask : comparingTasks) {
+
+            List<City> comparingPath = comparingTask.path();
+
+            /*if (path.size() <= comparingPath.size()) {
+
+                for (City city : path) {
+
+                    if (comparingPath.contains(city)) {
+
+                        return true;
+                    }
+                }
+            }*/
+
+            for (City city : path) {
+
+                if (comparingPath.contains(city)) {
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }
+
+    private double heuristic2(State bestMove) {
+
+        List<Task> currentNotContained = new ArrayList<>();
+        List<Task> availableNotContained = new ArrayList<>();
+
+        extractNotContained(bestMove, currentNotContained, availableNotContained);
+
+        double hCost = 0;
+
+        for (Task task : currentNotContained) {
+            hCost += task.pathLength();
+        }
+
+        for (Task task : availableNotContained) {
+            hCost += task.pathLength();
+        }
+
+        return hCost;
+
+    }
+
+    private Double heuristic(State currenState) {
+
+        /*double maxCarriedCost = currenState.getCarriedTasks().stream().map(x -> {double value = currenState.getCurrentCity().distanceTo(x.deliveryCity);
+                                                                                return value;}).max(Comparator.naturalOrder()).get();
+        double maxAvailableCost = currenState.getAvailableTasks().stream().map(x -> {double value = currenState.getCurrentCity().distanceTo(x.deliveryCity);
+                                                                                    return value;}).max(Comparator.naturalOrder()).get();
+
+        */
+        double maxCarriedCost = 0.;
+        for (Task task : currenState.getCarriedTasks()) {
+
+            double cost = currenState.getCurrentCity().distanceTo(task.deliveryCity);
+
+            if( cost > maxCarriedCost)
+                maxCarriedCost = cost;
+        }
+
+        double maxAvailableCost = 0.;
+        for (Task task : currenState.getAvailableTasks()) {
+
+            double cost = currenState.getCurrentCity().distanceTo(task.pickupCity) + task.pickupCity.distanceTo(task.deliveryCity);
+
+            if( cost > maxAvailableCost)
+                maxCarriedCost = cost;
+        }
+
+        
+        return Math.max(maxAvailableCost, maxCarriedCost);
     }
 
     public Plan bfs(Vehicle vehicle, TaskSet tasks, List<Task> carriedTasks){
 
-        goalStateList = new ArrayList<>();
+        //goalStateList = new ArrayList<>();
 
-        Deque<State> notVisitedQueue = new ArrayDeque<>();
+        Deque<Node> notVisitedQueue = new ArrayDeque<>();
 
-        Set<State> visitedNodesSet = new HashSet<>();
+        Set<Node> visitedNodesSet = new HashSet<>();
 
         City currentCity = vehicle.getCurrentCity();
         List<Task> availableTasks = new ArrayList<>(tasks);
         List<Task> currentTasks = new ArrayList<>(carriedTasks);
-        List<Action> actionAlreadyExecuted = new ArrayList<>();
+        //List<Action> actionAlreadyExecuted = new ArrayList<>();
 
-        State root = new State(currentCity, availableTasks, currentTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
+        // State root = new State(currentCity, availableTasks, carriedTasks, actionAlreadyExecuted, vehicle.capacity(), 0);
+        Node root = new Node(new State(currentCity, availableTasks, currentTasks, vehicle.capacity(), 0), null, 0);
 
         notVisitedQueue.addFirst(root);
 
         int iter = 0;
 
-        State bestGoalState = null;
+        Node bestGoalNode = null;
+
+        List<Action> actionList = new ArrayList<>();
 
         while (!notVisitedQueue.isEmpty()){
 
-            State currentState = notVisitedQueue.pop();
-            System.out.println("iter: "+ iter + " queueSize: " + notVisitedQueue.size());
+            Node currentNode = notVisitedQueue.poll();
+            //State currentState = notVisitedQueue.pop();
+            //System.out.println("iter: "+ iter + " queueSize: " + notVisitedQueue.size());
 
-            if(!visitedNodesSet.contains(currentState)){
+            if(!visitedNodesSet.contains(currentNode)){
 
-                if(isGoalState(currentState) && (bestGoalState == null || currentState.getDistanceCost() < bestGoalState.getDistanceCost())){
+                if(isGoalState(currentNode.getState()) && (bestGoalNode == null || currentNode.getDistanceCost() < bestGoalNode.getDistanceCost())){
 
-                    bestGoalState = currentState;
+                    bestGoalNode = currentNode;
                     //goalStateList.add(currentState);
 
                 }
 
                 else{
 
-                    visitedNodesSet.add(currentState);
-                    notVisitedQueue.addAll(getAllChildren(currentState));
+                    visitedNodesSet.add(currentNode);
+                    notVisitedQueue.addAll(getAllNodeChildren(currentNode));
 
                     /*for (Map.Entry<State, Deque<Action>> childStateActionEntry : getAllChildren(currentState).entrySet()) {
 
@@ -105,8 +402,11 @@ public class DeliberativeStrategy {
         }
 
         //return createOptimalPlan(goalStateList, currentCity);
-        return new Plan(currentCity, bestGoalState.getActionsAlreadyExecuted());
 
+        System.out.println("number of iterations: " + iter);
+        actionList = createPath(bestGoalNode);
+        //return new Plan(currentCity, bestGoalState.getActionsAlreadyExecuted());
+        return new Plan(currentCity, actionList);
     }
 
 
@@ -124,12 +424,12 @@ public class DeliberativeStrategy {
         for (City neighbourCity : currentState.getCurrentCity().neighbors()) {
 
             double distanceCost = currentState.getDistanceCost();
-            List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
+            //List<Action> actionsExecuted = new ArrayList<>(currentState.getActionsAlreadyExecuted());
             List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
             List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
             int availableCapacity = currentState.getAvailableCapacity();
 
-            actionsExecuted.add(new Action.Move(neighbourCity));
+            //actionsExecuted.add(new Action.Move(neighbourCity));
 
             distanceCost += currentState.getCurrentCity().distanceTo(neighbourCity);
 
@@ -137,7 +437,7 @@ public class DeliberativeStrategy {
 
                 if(taskTaken.deliveryCity.equals(neighbourCity)){
 
-                    actionsExecuted.add(new Action.Delivery(taskTaken));
+                    //actionsExecuted.add(new Action.Delivery(taskTaken));
 
                     currentTasks.remove(taskTaken);
 
@@ -151,7 +451,7 @@ public class DeliberativeStrategy {
 
                 if(availableTask.pickupCity.equals(neighbourCity) && availableTask.weight <= availableCapacity){
 
-                    actionsExecuted.add(new Action.Pickup(availableTask));
+                    //actionsExecuted.add(new Action.Pickup(availableTask));
 
                     availableTasks.remove(availableTask);
 
@@ -165,7 +465,8 @@ public class DeliberativeStrategy {
 
             }
 
-            State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
+            //State childState = new State(neighbourCity, availableTasks, currentTasks, actionsExecuted, availableCapacity, distanceCost);
+            State childState = new State(neighbourCity, availableTasks, currentTasks, availableCapacity, distanceCost);
 
             childrenList.add(childState);
 

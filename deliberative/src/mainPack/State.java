@@ -17,7 +17,7 @@ public class State {
     private City currentCity;
     private List<Task> availableTasks;
     private List<Task> carriedTasks;
-    private List<Action> actionsAlreadyExecuted;
+    //private List<Action> actionsAlreadyExecuted;
 
     @Override
     public boolean equals(Object o) {
@@ -45,15 +45,15 @@ public class State {
     }
 
 
-    public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
-                 List<Action> actionsAlreadyExecuted, int availableCapacity, double distanceCost) {
+    /*public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
+               List<Action> actionsAlreadyExecuted, int availableCapacity, double distanceCost) {
         this.currentCity = currentCity;
         this.availableTasks = availableTasks;
         this.carriedTasks = carriedTasks;
-        this.actionsAlreadyExecuted = actionsAlreadyExecuted;
+        //this.actionsAlreadyExecuted = actionsAlreadyExecuted;
         this.availableCapacity = availableCapacity;
         this.distanceCost = distanceCost;
-    }
+    }*/
 
     public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
                   int availableCapacity, double distanceCost) {
@@ -115,9 +115,9 @@ public class State {
     }*/
 
 
-    public List<Action> getActionsAlreadyExecuted() {
+    /*public List<Action> getActionsAlreadyExecuted() {
         return actionsAlreadyExecuted;
-    }
+    }*/
 
     public double getDistanceCost() {
         return distanceCost;
