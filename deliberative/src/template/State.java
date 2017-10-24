@@ -1,6 +1,5 @@
-package mainPack;
+package template;
 
-import logist.plan.Action;
 import logist.task.Task;
 import logist.topology.Topology.City;
 

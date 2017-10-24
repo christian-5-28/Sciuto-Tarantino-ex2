@@ -1,7 +1,4 @@
-package mainPack;
-
-import java.util.ArrayList;
-import java.util.List;
+package template;
 
 
 public class Node {

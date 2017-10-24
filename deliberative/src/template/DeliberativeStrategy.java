@@ -1,4 +1,4 @@
-package mainPack;
+package template;
 
 import logist.plan.Action;
 import logist.plan.Plan;
