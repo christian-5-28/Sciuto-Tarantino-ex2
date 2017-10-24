@@ -55,7 +55,7 @@ public class DeliberativeStrategy {
         List<Task> availableTasks = new ArrayList<>(tasks);
         List<Task> currentTasks = new ArrayList<>(carriedTasks);
 
-        Node root = new Node(new State(currentCity, availableTasks, currentTasks, vehicle.capacity(), 0), null, 0);
+        Node root = new Node(new State(currentCity, availableTasks, currentTasks, vehicle.capacity()), null, 0);
 
         notVisitedQueue.addFirst(root);
 
@@ -69,21 +69,23 @@ public class DeliberativeStrategy {
 
             if(!visitedNodesSet.contains(currentNode)){
 
-                if(isGoalState(currentNode.getState()) && (bestGoalNode == null || currentNode.getDistanceCost() < bestGoalNode.getDistanceCost())){
+                if(isGoalState(currentNode.getState())
+                        && (bestGoalNode == null || currentNode.getDistanceCost() < bestGoalNode.getDistanceCost())){
 
                     bestGoalNode = currentNode;
                 }
 
                 else{
-
                     visitedNodesSet.add(currentNode);
-                    notVisitedQueue.addAll(getAllNodeChildren(currentNode));
+                    notVisitedQueue.addAll(getAllNodeChildren(currentNode, false));
                 }
             }
             iter++;
         }
 
         System.out.println("number of iterations: " + iter);
+
+        System.out.println(bestGoalNode.getDistanceCost());
 
         return new Plan(currentCity, createPath(bestGoalNode));
     }
@@ -95,32 +97,21 @@ public class DeliberativeStrategy {
                 && currentState.getCarriedTasks().isEmpty();
     }
 
-
-    private List<Node> getAllNodeChildren(Node currentNode) {
-
-        List<Node> nodeList = new ArrayList<>();
-        for (State state : getAllChildren(currentNode.getState())) {
-            nodeList.add(new Node(state, currentNode, heuristic(state)));
-        }
-
-        return nodeList;
-    }
-
     /**
      * This method creates all the next possible states for the current state.
      * For each neighbour city we check if there are task that we can deliver there, then
      * we check if we can pick up available tasks in the neighbour city considering
      * the available capacity of the vehicle.
-     * @param currentState
      * @return
      */
-    List<State> getAllChildren(State currentState){
+    private List<Node> getAllNodeChildren(Node currentNode, boolean isAstar) {
 
-        List<State> childrenList = new ArrayList<>();
+        List<Node> nodeList = new ArrayList<>();
+        State currentState = currentNode.getState();
 
         for (City neighbourCity : currentState.getCurrentCity().neighbors()) {
 
-            double distanceCost = currentState.getDistanceCost();
+            double distanceCost = currentNode.getDistanceCost();
             List<Task> availableTasks = new ArrayList<>(currentState.getAvailableTasks());
             List<Task> currentTasks = new ArrayList<>(currentState.getCarriedTasks());
             int availableCapacity = currentState.getAvailableCapacity();
@@ -132,11 +123,8 @@ public class DeliberativeStrategy {
                 if(taskTaken.deliveryCity.equals(neighbourCity)){
 
                     currentTasks.remove(taskTaken);
-
                     availableCapacity += taskTaken.weight;
-
                 }
-
             }
 
             for (Task availableTask : currentState.getAvailableTasks()) {
@@ -144,32 +132,35 @@ public class DeliberativeStrategy {
                 if(availableTask.pickupCity.equals(neighbourCity) && availableTask.weight <= availableCapacity){
 
                     availableTasks.remove(availableTask);
-
                     availableCapacity -= availableTask.weight;
-
                     currentTasks.add(availableTask);
-
                 }
             }
 
-            State childState = new State(neighbourCity, availableTasks, currentTasks, availableCapacity, distanceCost);
+            State childState = new State(neighbourCity, availableTasks, currentTasks, availableCapacity);
+            Node nodeChild = new Node(childState, currentNode, distanceCost);
 
-            childrenList.add(childState);
+            if(isAstar){
+                nodeChild.updateCosts(heuristic(childState));
+            }
+
+            nodeList.add(nodeChild);
         }
-        return childrenList;
+        return nodeList;
     }
 
 
-    public Plan astar(Vehicle vehicle, TaskSet availabletasks, List<Task> currentTasks) {
 
-        Queue<Node> notVisitedQueue = new PriorityQueue<>(new CostComparator());
+    public Plan astar(Vehicle vehicle, TaskSet tasks, List<Task> currentTasks) {
+
+        Queue<Node> notVisitedQueue = new PriorityQueue<>( new CostComparator());
 
         List<Node> nodesVisitedList = new ArrayList<>();
 
         City currentCity = vehicle.getCurrentCity();
-        List<Task> availableTasks = new ArrayList<>(availabletasks);
+        List<Task> availableTasks = new ArrayList<>(tasks);
         List<Task> carriedTasks = new ArrayList<>(currentTasks);
-        State root = new State(currentCity, availableTasks, carriedTasks, vehicle.capacity(), 0);
+        State root = new State(currentCity, availableTasks, carriedTasks, vehicle.capacity());
 
         notVisitedQueue.add(new Node(root, null, heuristic(root)));
 
@@ -192,7 +183,7 @@ public class DeliberativeStrategy {
 
                 nodesVisitedList.add(currentNode);
 
-                for (Node childNode : getAllNodeChildren(currentNode)) {
+                for (Node childNode : getAllNodeChildren(currentNode, true)) {
 
                     /**
                      * if the nodeVisitedList contains a node with the same state of the childNode but the distanceCost
@@ -246,9 +237,7 @@ public class DeliberativeStrategy {
     }
 
     /**
-     *
      * this method returns the the list of actions done up to the currentNode.
-     *
      */
     private List<Action> createPath(Node currentNode) {
 

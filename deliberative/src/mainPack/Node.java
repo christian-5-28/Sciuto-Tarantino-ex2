@@ -12,13 +12,23 @@ public class Node {
     private double distanceCost;
     private double heuristicCost;
 
-    public Node(State state, Node father, double heuristicCost) {
+    public Node(State state, Node father, double distanceCost ){
+
+        this.state = state;
+        this.father = father;
+        this.heuristicCost = 0;
+        this.distanceCost = distanceCost;
+        this.finalCost = heuristicCost + distanceCost;
+
+    }
+
+    /*public Node(State state, Node father, double heuristicCost) {
         this.state = state;
         this.father = father;
         this.heuristicCost = heuristicCost;
         this.distanceCost = state.getDistanceCost();
         this.finalCost = heuristicCost + distanceCost;
-    }
+    }*/
 
     public State getState() {
         return state;
@@ -38,6 +48,12 @@ public class Node {
 
     public double getHeuristicCost() {
         return heuristicCost;
+    }
+
+    public void updateCosts(double heuristicCost){
+
+        this.heuristicCost = heuristicCost;
+        finalCost = distanceCost + heuristicCost;
     }
 
     @Override

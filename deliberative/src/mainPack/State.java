@@ -9,7 +9,6 @@ import java.util.List;
 public class State {
 
     private int availableCapacity;
-    private double distanceCost;
 
     private City currentCity;
     private List<Task> availableTasks;
@@ -17,12 +16,11 @@ public class State {
 
 
     public State(City currentCity, List<Task> availableTasks, List<Task> carriedTasks,
-                  int availableCapacity, double distanceCost) {
+                 int availableCapacity) {
         this.currentCity = currentCity;
         this.availableTasks = availableTasks;
         this.carriedTasks = carriedTasks;
         this.availableCapacity = availableCapacity;
-        this.distanceCost = distanceCost;
     }
 
     public City getCurrentCity() {
@@ -41,10 +39,10 @@ public class State {
         return availableCapacity;
     }
 
-    public double getDistanceCost() {
+    /*public double getDistanceCost() {
         return distanceCost;
     }
-
+*/
     @Override
     public boolean equals(Object o) {
 
