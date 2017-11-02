@@ -85,8 +85,6 @@ public class DeliberativeStrategy {
 
         System.out.println("number of iterations: " + iter);
 
-        System.out.println(bestGoalNode.getDistanceCost());
-
         return new Plan(currentCity, createPath(bestGoalNode));
     }
 
