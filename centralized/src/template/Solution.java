@@ -132,7 +132,12 @@ public class Solution {
 
         //TODO: controllare che esista il tempo di pick up e delivery
 
-        return tasksDomain == taskActionTimesMap.keySet();
+        for (Task task : taskActionTimesMap.keySet()) {
+            if(!tasksDomain.contains(task)){
+                return false;
+            }
+        }
+        return true;
 
     }
 
@@ -152,6 +157,7 @@ public class Solution {
         for (Vehicle vehicle : vehiclesDomain) {
             returnValue = returnValue && loadConstraint(vehicle);
         }
+        returnValue = returnValue && allTasksDeliveredConstraint();
 
         return returnValue && allTasksDeliveredConstraint();
     }
@@ -172,35 +178,42 @@ public class Solution {
 
         List<Action> vehicleActions = vehicleActionMap.get(vehicle);
 
-        double cost = vehicle.getCurrentCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();
+        if(!vehicleActions.isEmpty()){
 
-        for (int i = 0; i < vehicleActions.size() - 1; i++) {
+            double cost = vehicle.getCurrentCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();
 
-            Action currentAction = vehicleActions.get(i);
-            Action nextAction = vehicleActions.get(i + 1);
-            Topology.City currentCity;
-            Topology.City nextCity;
+            for (int i = 0; i < vehicleActions.size() - 1; i++) {
+
+                Action currentAction = vehicleActions.get(i);
+                Action nextAction = vehicleActions.get(i + 1);
+                Topology.City currentCity;
+                Topology.City nextCity;
 
 
-            if(currentAction.getActionType() == Action.ActionType.PICKUP) {
-                currentCity = currentAction.getTask().pickupCity;
+                if(currentAction.getActionType() == Action.ActionType.PICKUP) {
+                    currentCity = currentAction.getTask().pickupCity;
+                }
+                else {
+                    currentCity = currentAction.getTask().deliveryCity;
+                }
+
+                if(nextAction.getActionType() == Action.ActionType.PICKUP) {
+                    nextCity = nextAction.getTask().pickupCity;
+                }
+                else {
+                    nextCity = nextAction.getTask().deliveryCity;
+                }
+
+                cost += currentCity.distanceTo(nextCity) * vehicle.costPerKm();
+
             }
-            else {
-                currentCity = currentAction.getTask().deliveryCity;
-            }
 
-            if(nextAction.getActionType() == Action.ActionType.PICKUP) {
-                nextCity = nextAction.getTask().pickupCity;
-            }
-            else {
-                nextCity = nextAction.getTask().deliveryCity;
-            }
-
-            cost += currentCity.distanceTo(nextCity) * vehicle.costPerKm();
+            return cost;
 
         }
 
-        return cost;
+        return 0.;
+
     }
 
     public TaskSet getTasksDomain() {

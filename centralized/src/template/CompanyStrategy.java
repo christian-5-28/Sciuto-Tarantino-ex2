@@ -25,9 +25,11 @@ public class CompanyStrategy {
 
         for (int i = 0; i < maxIter; i++) {
 
+            System.out.println("iteration: " + i);
             Solution oldSolution = new Solution(solution);
             List<Solution> neighbors = chooseNeighbors(oldSolution);
             solution = localChoice(neighbors, probability, oldSolution);
+
         }
 
         return solution;
@@ -73,6 +75,12 @@ public class CompanyStrategy {
         }
 
         Solution solution = new Solution(tasksDomain, vehiclesDomain);
+
+        for (Vehicle vehicle : vehiclesDomain) {
+
+            solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
+            solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
+        }
 
         ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
         ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
@@ -137,7 +145,6 @@ public class CompanyStrategy {
 
             solution.getTaskActionTimesMap().put(task, new ActionTimes(actions.indexOf(pickUp), actions.indexOf(delivery)));
 
-
         }
 
         solution.getVehicleActionMap().put(vehicle, actions);
@@ -149,8 +156,16 @@ public class CompanyStrategy {
 
         // Getting random vehicle from the vehicle domain
         List<Vehicle> vehiclesDomain = oldSolution.getVehiclesDomain();
-        int randVehicleIndex = new Random().nextInt(vehiclesDomain.size());
-        Vehicle randVehicle = vehiclesDomain.get(randVehicleIndex);
+
+        List<Vehicle> vehiclesWithTask = new ArrayList<>();
+        for (Vehicle vehicle : vehiclesDomain) {
+            if(!oldSolution.getVehicleTasksMap().get(vehicle).isEmpty()){
+                vehiclesWithTask.add(vehicle);
+            }
+        }
+
+        int randVehicleIndex = new Random().nextInt(vehiclesWithTask.size());
+        Vehicle randVehicle = vehiclesWithTask.get(randVehicleIndex);
 
         // Getting random task from the task domain of the vehicle
         List<Task> vehicleTasks = oldSolution.getVehicleTasksMap().get(randVehicle);
@@ -160,6 +175,8 @@ public class CompanyStrategy {
         // For every vehicle in the domain, if the vehicle is != randVehicle, then
         // we switch the random task between the two vehicles and we create
         // a new candidate solution
+
+        System.out.println("starting switch task");
         for (Vehicle vehicle : oldSolution.getVehiclesDomain()) {
 
             // TODO: vedere se aggiungere come condizione dell'if il controllo della free capacity del vehicle
@@ -172,6 +189,8 @@ public class CompanyStrategy {
         // If the current vehicle has more than one task, we compute all the possible
         // solutions considering all the possible permutations of the actions.
         // Then we add them to the neighbors solution List
+
+        System.out.println("starting permutation");
         if (oldSolution.getVehicleTasksMap().get(randVehicle).size() >= 2) {
             neighbors.addAll(actionPermutation(oldSolution, randVehicle));
         }
@@ -200,8 +219,10 @@ public class CompanyStrategy {
         ActionTimes actionTimes = tempSolution.getTaskActionTimesMap().get(taskToSwitch);
 
         // We remove from the vehicle (v1) the actions that it is not going to do anymore
-        Action pickUp = tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.pickUpTime);
-        Action delivery = tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.deliveryTime);
+        Action pickUp = tempSolution.getVehicleActionMap().get(v1).get(actionTimes.pickUpTime);
+        Action delivery = tempSolution.getVehicleActionMap().get(v1).get(actionTimes.deliveryTime);
+        tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.pickUpTime);
+        tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.deliveryTime - 1);
 
         // We add those two actions to the vehicle v2
         tempSolution.getVehicleActionMap().get(v2).add(pickUp);
