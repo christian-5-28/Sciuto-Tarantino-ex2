@@ -5,34 +5,84 @@ import logist.task.Task;
 import logist.task.TaskSet;
 import logist.topology.Topology;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by lorenzotara on 03/11/17.
  */
 public class Solution {
 
-    private TaskSet tasksDomain;
-    private Set<Vehicle> vehiclesDomain;
+    private static TaskSet tasksDomain;
+    private static List<Vehicle> vehiclesDomain;
 
-     class ActionTimes {
 
-        public int pickUpTime;
-        public int deliveryTime;
-    }
-
-     private Map<Vehicle, TaskSet> vehicleTasksMap;
+     private Map<Vehicle, List<Task>> vehicleTasksMap;
      private Map<Task, ActionTimes> taskActionTimesMap;
      private Map<Vehicle, List<Action>> vehicleActionMap;
      private Map<Task, Vehicle> taskVehicleMap;
 
-    public Solution(TaskSet tasksDomain, Set<Vehicle> vehiclesDomain) {
+    /**
+     * This constructor creates a new Solution object as a deep copy of the old solution
+     * @param oldSolution
+     */
+    public Solution(Solution oldSolution) {
 
-        this.tasksDomain = tasksDomain;
-        this.vehiclesDomain = vehiclesDomain;
+        this.vehicleTasksMap = copyVehicleTasks(oldSolution.vehicleTasksMap);
+        this.vehicleActionMap = copyVehicleActions(oldSolution.vehicleActionMap);
+        this.taskActionTimesMap = copyActionTimes(oldSolution.taskActionTimesMap);
+        this.taskVehicleMap = new HashMap<>(oldSolution.getTaskVehicleMap());
+
+
+    }
+
+    private Map<Task, ActionTimes> copyActionTimes(Map<Task, ActionTimes> taskActionTimesMap) {
+
+        HashMap<Task, ActionTimes> returnMap = new HashMap<>();
+
+        for (Map.Entry<Task, ActionTimes> taskActionTimesEntry : taskActionTimesMap.entrySet()) {
+            returnMap.put(taskActionTimesEntry.getKey(), new ActionTimes(taskActionTimesEntry.getValue()));
+        }
+
+        return returnMap;
+    }
+
+    /**
+     * Copying the Vehicle Actions map
+     * @param vehicleActionMap
+     * @return
+     */
+    private Map<Vehicle, List<Action>> copyVehicleActions(Map<Vehicle, List<Action>> vehicleActionMap) {
+
+        HashMap<Vehicle, List<Action>> returnMap = new HashMap<>();
+
+        for (Map.Entry<Vehicle, List<Action>> vehicleListEntry : vehicleActionMap.entrySet()) {
+            returnMap.put(vehicleListEntry.getKey(), new ArrayList<>(vehicleListEntry.getValue()));
+        }
+
+        return returnMap;
+    }
+
+
+    /**
+     * Copying the Vehicle Tasks map
+     * @param vehicleTasksMap
+     * @return
+     */
+    private Map<Vehicle, List<Task>> copyVehicleTasks(Map<Vehicle, List<Task>> vehicleTasksMap) {
+
+        HashMap<Vehicle, List<Task>> returnMap = new HashMap<>();
+
+        for (Map.Entry<Vehicle, List<Task>> vehicleListEntry : vehicleTasksMap.entrySet()) {
+            returnMap.put(vehicleListEntry.getKey(), new ArrayList<>(vehicleListEntry.getValue()));
+        }
+
+        return returnMap;
+    }
+
+    public Solution(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
+
+        Solution.tasksDomain = tasksDomain;
+        Solution.vehiclesDomain = vehiclesDomain;
 
         vehicleTasksMap = new HashMap<>();
         taskActionTimesMap = new HashMap<>();
@@ -40,7 +90,7 @@ public class Solution {
         taskVehicleMap = new HashMap<>();
     }
 
-    // COSTRAINT
+    // CONSTRAINT
     /**
      * constraint on the fact that each task of the vehicle has a weight lower
      * then the capacity of the vehicle and also that the sum of the wieghts
@@ -80,41 +130,33 @@ public class Solution {
      */
     public boolean allTasksDeliveredConstraint() {
 
+        //TODO: controllare che esista il tempo di pick up e delivery
+
         return tasksDomain == taskActionTimesMap.keySet();
 
     }
 
 
     /**
-     * checks if a task is linked with a vehicle, then
-     * the task is inside the taskSet linked to that vehicle
-     * @param task
+     * returns true if every constraint is respected
      * @return
      */
-    /*public boolean constraint3(Task task){
+    public boolean isValid() {
 
-        Vehicle vehicle = vehicleMap.get(task);
+        boolean returnValue = true;
 
-        return vehicleTasksMap.get(vehicle).contains(task);
-
-    }*/
-
-    /**
-     * alternative version
-     */
-    /*public boolean constraint3Alternative(Vehicle vehicle){
-
-        for (Task task : vehicleTasksMap.get(vehicle)) {
-
-            if(vehicleMap.get(task).id() != vehicle.id())
-                return false;
-
+        for (Task task : tasksDomain) {
+            returnValue = returnValue && timeConstraint(task);
         }
 
-        return true;
-    }*/
+        for (Vehicle vehicle : vehiclesDomain) {
+            returnValue = returnValue && loadConstraint(vehicle);
+        }
 
-    //TODO: objective function
+        return returnValue && allTasksDeliveredConstraint();
+    }
+
+
     public double objectiveFunction(){
 
         double totalCost = 0.;
@@ -159,5 +201,29 @@ public class Solution {
         }
 
         return cost;
+    }
+
+    public TaskSet getTasksDomain() {
+        return tasksDomain;
+    }
+
+    public List<Vehicle> getVehiclesDomain() {
+        return vehiclesDomain;
+    }
+
+    public Map<Vehicle, List<Task>> getVehicleTasksMap() {
+        return vehicleTasksMap;
+    }
+
+    public Map<Task, ActionTimes> getTaskActionTimesMap() {
+        return taskActionTimesMap;
+    }
+
+    public Map<Vehicle, List<Action>> getVehicleActionMap() {
+        return vehicleActionMap;
+    }
+
+    public Map<Task, Vehicle> getTaskVehicleMap() {
+        return taskVehicleMap;
     }
 }
