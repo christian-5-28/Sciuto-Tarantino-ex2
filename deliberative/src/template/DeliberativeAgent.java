@@ -56,7 +56,7 @@ public class DeliberativeAgent implements DeliberativeBehavior {
                 plan = strategy.astar(vehicle, tasks, new ArrayList<>(vehicle.getCurrentTasks()));
                 double finishTimeStar = System.currentTimeMillis();
 
-                System.out.println("time to calculate BFS: " + ((finishTimeStar - startTimeStar)/1000) + " seconds");
+                System.out.println("time to calculate ASTAR: " + ((finishTimeStar - startTimeStar)/1000) + " seconds");
                 break;
 
             case BFS:
