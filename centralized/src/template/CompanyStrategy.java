@@ -3,6 +3,7 @@ package template;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
+import logist.topology.Topology;
 
 import java.util.*;
 
@@ -192,7 +193,31 @@ public class CompanyStrategy {
 
         ArrayList<Action> actions = new ArrayList<>();
 
-        for (Task task: vehicleTasks) {
+        ArrayList<Task> tasksToAdd = new ArrayList<>(vehicleTasks);
+        Topology.City currentCity = vehicle.getCurrentCity();
+
+        ArrayList<Task> tasksToDeliver = new ArrayList<>();
+
+        for (Task task : tasksToAdd) {
+            if (task.pickupCity.equals(currentCity)) {
+                Action pickUp = new Action(Action.ActionType.PICKUP, task);
+                actions.add(pickUp);
+                tasksToDeliver.add(task);
+            }
+        }
+
+        for (Task task : tasksToDeliver) {
+
+            Action delivery = new Action(Action.ActionType.DELIVERY, task);
+            actions.add(delivery);
+            tasksToAdd.remove(task);
+
+            int indexOfPickup = tasksToDeliver.indexOf(delivery);
+
+            solution.getTaskActionTimesMap().put(task, new ActionTimes(indexOfPickup, indexOfPickup + tasksToDeliver.size()));
+        }
+
+        for (Task task: tasksToAdd) {
 
             Action pickUp = new Action(Action.ActionType.PICKUP, task);
             Action delivery = new Action(Action.ActionType.DELIVERY, task);
