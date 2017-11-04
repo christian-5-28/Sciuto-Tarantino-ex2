@@ -15,6 +15,9 @@ public class Solution {
     private static TaskSet tasksDomain;
     private static List<Vehicle> vehiclesDomain;
 
+    //TODO: per debbuging
+    public boolean changingVehicle = false;
+
 
      private Map<Vehicle, List<Task>> vehicleTasksMap;
      private Map<Task, ActionTimes> taskActionTimesMap;
