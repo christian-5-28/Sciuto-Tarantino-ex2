@@ -212,7 +212,7 @@ public class CompanyStrategy {
             actions.add(delivery);
             tasksToAdd.remove(task);
 
-            int indexOfPickup = tasksToDeliver.indexOf(delivery);
+            int indexOfPickup = tasksToDeliver.indexOf(task);
 
             solution.getTaskActionTimesMap().put(task, new ActionTimes(indexOfPickup, indexOfPickup + tasksToDeliver.size()));
         }

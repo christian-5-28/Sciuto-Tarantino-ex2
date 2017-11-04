@@ -35,7 +35,7 @@ public class CentralizedCompany implements CentralizedBehavior {
         // this code is used to get the timeouts
         LogistSettings ls = null;
         try {
-            ls = Parsers.parseSettings("config\\settings_default.xml");
+            ls = Parsers.parseSettings("config/settings_default.xml");
         }
         catch (Exception exc) {
             System.out.println("There was a problem loading the configuration file.");
@@ -58,7 +58,7 @@ public class CentralizedCompany implements CentralizedBehavior {
 
         companyStrategy = new CompanyStrategy(tasks, vehicles);
         System.out.println("starting SLS");
-        bestSolution = companyStrategy.SLS(5000, 0.3);
+        bestSolution = companyStrategy.SLS(50000, 0.3);
         System.out.println("completed SLS");
 
         List<Plan> planList = new ArrayList<>();
