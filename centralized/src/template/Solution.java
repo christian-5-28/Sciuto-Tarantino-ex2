@@ -119,6 +119,11 @@ public class Solution {
 
         ActionTimes actionTimes = taskActionTimesMap.get(task);
 
+        if(actionTimes == null){
+            int i = 0;
+        }
+
+
         return actionTimes.pickUpTime < actionTimes.deliveryTime;
 
     }

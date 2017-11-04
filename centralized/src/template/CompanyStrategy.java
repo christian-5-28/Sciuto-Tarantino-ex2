@@ -21,7 +21,8 @@ public class CompanyStrategy {
 
     public Solution SLS(int maxIter, double probability) {
 
-        Solution solution = naiveSolution();
+        Solution solution = initialSolution();
+        //Solution solution = naiveSolution();
 
         for (int i = 0; i < maxIter; i++) {
 
@@ -29,6 +30,7 @@ public class CompanyStrategy {
             Solution oldSolution = new Solution(solution);
             List<Solution> neighbors = chooseNeighbors(oldSolution);
             solution = localChoice(neighbors, probability, oldSolution);
+            System.out.println("solution cost: " + solution.objectiveFunction());
 
         }
 
@@ -38,10 +40,10 @@ public class CompanyStrategy {
 
     private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution) {
 
-        Solution bestSolution = null;
+        Solution bestSolution = oldSolution;
 
         for (Solution neighbor : neighbors) {
-            if (bestSolution == null || neighbor.objectiveFunction() < bestSolution.objectiveFunction()) {
+            if (neighbor.objectiveFunction() < bestSolution.objectiveFunction()) {
                 bestSolution = neighbor;
             }
         }
@@ -51,6 +53,57 @@ public class CompanyStrategy {
         if (newSolutionChosen) return bestSolution;
 
         return oldSolution;
+
+    }
+
+    private Solution initialSolution(){
+
+        Solution solution = new Solution(tasksDomain, vehiclesDomain);
+
+        for (Vehicle vehicle : vehiclesDomain) {
+
+            solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
+            solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
+        }
+
+
+        ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
+        ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
+
+        int numberOfvehicles = vehicles.size();
+
+        int vehicleIndex = 0;
+
+        for (Vehicle vehicle : vehicles) {
+
+            for (Task task : tasksDomain) {
+                if(task.pickupCity.equals(vehicle.homeCity()) && task.weight <= vehicle.capacity() - vehicle.getCurrentTasks().weightSum()){
+
+                    solution.getVehicleTasksMap().get(vehicle).add(task);
+                    tasksToAdd.remove(task);
+                }
+            }
+
+        }
+        //TODO: while non vuota
+        for (Task task : tasksToAdd) {
+
+            Vehicle vehicle = vehicles.get(vehicleIndex);
+            vehicleIndex = (vehicleIndex + 1 ) % numberOfvehicles;
+            if(task.weight <= vehicle.capacity() - vehicle.getCurrentTasks().weightSum()){
+                solution.getVehicleTasksMap().get(vehicle).add(task);
+            }
+        }
+
+        for (Vehicle vehicle : vehicles) {
+
+            List<Task> vehicleTasks = solution.getVehicleTasksMap().get(vehicle);
+
+            createActions(solution, vehicle, vehicleTasks);
+
+        }
+
+        return solution;
 
     }
 
@@ -98,7 +151,10 @@ public class CompanyStrategy {
 
             for (Task task : tasksDomain) {
 
-                if (tasksToAdd.contains(task) && task.weight <= vehicle.capacity() - load) {
+                if(!tasksToAdd.contains(task))
+                    continue;
+
+                if (task.weight <= vehicle.capacity() - load) {
 
                     vehicleTasks.add(task);
                     tasksToAdd.remove(task);
@@ -132,7 +188,7 @@ public class CompanyStrategy {
      * @param vehicle
      * @param vehicleTasks
      */
-    private void createActions(Solution solution, Vehicle vehicle, ArrayList<Task> vehicleTasks) {
+    private void createActions(Solution solution, Vehicle vehicle, List<Task> vehicleTasks) {
 
         ArrayList<Action> actions = new ArrayList<>();
 
@@ -191,13 +247,39 @@ public class CompanyStrategy {
         // Then we add them to the neighbors solution List
 
         System.out.println("starting permutation");
-        if (oldSolution.getVehicleTasksMap().get(randVehicle).size() >= 2) {
+        /*if (oldSolution.getVehicleTasksMap().get(randVehicle).size() >= 2) {
             neighbors.addAll(actionPermutation(oldSolution, randVehicle));
+        }*/
+
+        List<Action> vehicleActionsList = oldSolution.getVehicleActionMap().get(randVehicle);
+        int vehicleActionsListSize = vehicleActionsList.size();
+        if(vehicleActionsListSize > 2){
+            for(int firstIndex = 0; firstIndex < vehicleActionsListSize - 1; firstIndex++){
+                for(int secondIndex = firstIndex + 1; secondIndex < vehicleActionsListSize; secondIndex++){
+                    neighbors.add(swapActions(oldSolution, randVehicle, vehicleActionsList, firstIndex, secondIndex));
+                }
+            }
         }
 
         neighbors = filterOnConstraints(neighbors);
 
         return neighbors;
+
+    }
+
+    private Solution swapActions(Solution oldSolution, Vehicle vehicle, List<Action> vehicleActionsList, int firstIndex, int secondIndex) {
+
+        Solution newSolution = new Solution(oldSolution);
+
+        Action firstAction = vehicleActionsList.get(firstIndex);
+        Action secondAction = vehicleActionsList.get(secondIndex);
+
+        newSolution.getVehicleActionMap().get(vehicle).set(firstIndex, secondAction);
+        newSolution.getVehicleActionMap().get(vehicle).set(secondIndex, firstAction);
+
+        updateTimes(newSolution, vehicle);
+
+        return newSolution;
 
     }
 
@@ -225,8 +307,36 @@ public class CompanyStrategy {
         tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.deliveryTime - 1);
 
         // We add those two actions to the vehicle v2
-        tempSolution.getVehicleActionMap().get(v2).add(pickUp);
-        tempSolution.getVehicleActionMap().get(v2).add(delivery);
+        //tempSolution.getVehicleActionMap().get(v2).add(pickUp);
+        //tempSolution.getVehicleActionMap().get(v2).add(delivery);
+
+        // We add those two actions to the vehicle v2 in a random position
+
+        List<Action> v2Actions = tempSolution.getVehicleActionMap().get(v2);
+        int pickUpIndex = new Random().nextInt(v2Actions.size() + 1);
+
+        if (pickUpIndex >= v2Actions.size()) {
+            v2Actions.add(pickUp);
+            v2Actions.add(delivery);
+        }
+
+        else {
+
+            v2Actions.add(pickUpIndex, pickUp);
+
+            int deliveryIndex = new Random().nextInt(v2Actions.size() + 1);
+            while (deliveryIndex <= pickUpIndex) {
+                deliveryIndex = new Random().nextInt(v2Actions.size() + 1);
+            }
+
+            if (deliveryIndex >= v2Actions.size()) {
+                v2Actions.add(delivery);
+            }
+
+            else {
+                v2Actions.add(deliveryIndex, delivery);
+            }
+        }
 
 
         updateTimes(tempSolution, v1);

@@ -58,15 +58,15 @@ public class CentralizedCompany implements CentralizedBehavior {
 
         companyStrategy = new CompanyStrategy(tasks, vehicles);
         System.out.println("starting SLS");
-        bestSolution = companyStrategy.SLS(100, 0.5);
+        bestSolution = companyStrategy.SLS(5000, 0.3);
         System.out.println("completed SLS");
 
         List<Plan> planList = new ArrayList<>();
 
-        for (Map.Entry<Vehicle, List<Action>> vehicleActionsEntry : bestSolution.getVehicleActionMap().entrySet()) {
-
-            planList.add(createVehiclePlan(vehicleActionsEntry.getKey(), vehicleActionsEntry.getValue()));
+        for (Vehicle vehicle : vehicles) {
+            planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
         }
+
 
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
         /*Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
