@@ -12,8 +12,10 @@ import java.util.*;
  */
 public class CompanyStrategy {
 
+    private static final double EPSILON = 1e-2;
     private TaskSet tasksDomain;
     private List<Vehicle> vehiclesDomain;
+    private int equalCostCounter = 0;
 
     public CompanyStrategy(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
         this.tasksDomain = tasksDomain;
@@ -23,6 +25,7 @@ public class CompanyStrategy {
     public Solution SLS(int maxIter, double probability) {
 
         Solution solution = initialSolution();
+        Solution bestSolution = solution;
         //Solution solution = naiveSolution();
 
         for (int i = 0; i < maxIter; i++) {
@@ -30,16 +33,19 @@ public class CompanyStrategy {
             System.out.println("iteration: " + i);
             Solution oldSolution = new Solution(solution);
             List<Solution> neighbors = chooseNeighbors(oldSolution);
-            solution = localChoice(neighbors, probability, oldSolution);
+            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), 20, i);
             System.out.println("solution cost: " + solution.objectiveFunction());
+            if(solution.objectiveFunction() < bestSolution.objectiveFunction())
+                bestSolution = solution;
 
         }
 
-        return solution;
+        System.out.println("BEST SOLUTION COST: " + bestSolution.objectiveFunction());
+        return bestSolution;
 
     }
 
-    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution) {
+    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, double minimumCost, int minimaThreshold, int iteration) {
 
         Solution bestSolution = oldSolution;
 
@@ -51,7 +57,34 @@ public class CompanyStrategy {
 
         double rand = new Random().nextDouble();
 
-        if(rand <= probability)
+        Solution solutionChosen = null;
+
+        if(rand < probability)
+            solutionChosen = bestSolution;
+
+        else
+            solutionChosen = oldSolution;
+
+        if((int)solutionChosen.objectiveFunction() == (int)minimumCost){
+            equalCostCounter++;
+        }
+        else {
+            equalCostCounter = 0;
+        }
+
+        if(equalCostCounter == minimaThreshold){
+            equalCostCounter = 0;
+            System.out.println("RANDOM CHOICHE AT ITERATION: " + iteration);
+            int randIndex = new Random().nextInt(neighbors.size());
+            solutionChosen = neighbors.get(randIndex);
+
+        }
+
+
+        return solutionChosen;
+
+
+       /* if(rand <= probability)
             return bestSolution;
 
         if (rand > probability && rand <= 2*probability)
@@ -59,7 +92,7 @@ public class CompanyStrategy {
 
         int randIndex = new Random().nextInt(neighbors.size());
 
-        return neighbors.get(randIndex);
+        return neighbors.get(randIndex);*/
 
     }
 
