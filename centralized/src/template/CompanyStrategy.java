@@ -48,11 +48,17 @@ public class CompanyStrategy {
             }
         }
 
-        boolean newSolutionChosen = new Random().nextDouble() < probability;
+        double rand = new Random().nextDouble();
 
-        if (newSolutionChosen) return bestSolution;
+        if(rand <= probability)
+            return bestSolution;
 
-        return oldSolution;
+        if (rand > probability && rand <= 2*probability)
+            return oldSolution;
+
+        int randIndex = new Random().nextInt(neighbors.size());
+
+        return neighbors.get(randIndex);
 
     }
 

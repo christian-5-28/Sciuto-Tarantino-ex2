@@ -58,7 +58,7 @@ public class CentralizedCompany implements CentralizedBehavior {
 
         companyStrategy = new CompanyStrategy(tasks, vehicles);
         System.out.println("starting SLS");
-        bestSolution = companyStrategy.SLS(5000, 0.3);
+        bestSolution = companyStrategy.SLS(10000, 0.45);
         System.out.println("completed SLS");
 
         List<Plan> planList = new ArrayList<>();
