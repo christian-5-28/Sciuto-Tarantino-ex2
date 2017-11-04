@@ -100,13 +100,26 @@ public class Solution {
      */
     public boolean loadConstraint(Vehicle vehicle){
 
-        int totalWeight = 0;
-        for (Task task : vehicleTasksMap.get(vehicle)) {
+        List<Action> actionsList = vehicleActionMap.get(vehicle);
 
-            totalWeight += task.weight;
+        int currentLoad = 0;
+        for (Action action : actionsList) {
+
+            if(currentLoad > vehicle.capacity())
+                return false;
+
+            switch (action.getActionType()){
+                case PICKUP:
+                    currentLoad += action.getTask().weight;
+                    break;
+                case DELIVERY:
+                    currentLoad -= action.getTask().weight;
+            }
+            
         }
 
-        return totalWeight < vehicle.capacity();
+        return true;
+
     }
 
     /**
