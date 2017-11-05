@@ -3,7 +3,9 @@ package template;
 import logist.task.Task;
 
 /**
- * Created by lorenzotara on 03/11/17.
+ Action class: it models the vehicle action.
+ 1) Two different action type: PICKUP and DELIVERY
+ 2) the specific task taken by the vehicle
  */
 public class Action {
 

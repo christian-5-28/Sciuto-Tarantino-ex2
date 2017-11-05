@@ -8,21 +8,42 @@ import logist.topology.Topology;
 import java.util.*;
 
 /**
- * Created by lorenzotara on 03/11/17.
+ * Solution class: it model a solution for PDP as a COP (Constraint Optimization Problem).
+ *
+ * Variables:
+ * 1) vehicleActions: Vehicle --> List of Actions (PICKUP or DELIVERY). It models the fact that a vehicle can carry multiple tasks in parallel
+ * 2) TaskActionTimes: Task --> ActionTime: It models when a task is picked up and when it is delivered
+ *
+ * Domain:
+ * 1) VehicleDomain: Vehicle set
+ * 2) TaskDomain: Set of all possible tasks
+ *
+ * Constraints:
+ * 1) loadConstraint: Vehicle --> boolean. (Details below)
+ * 2) timeCostraint: Task --> boolean. (details below)
+ * 3) allTasksDeliveredConstraint: verifies that all the possible tasks are picked up and delivered (details below)
+ *
+ * Objective function: return the total cost of the solution (details below).
+ *
  */
+
 public class Solution {
 
-    private static TaskSet tasksDomain;
-    private static List<Vehicle> vehiclesDomain;
+    private TaskSet tasksDomain;
+    private List<Vehicle> vehiclesDomain;
 
-    //TODO: per debbuging
-    public boolean changingVehicle = false;
-
-
-     private Map<Vehicle, List<Task>> vehicleTasksMap;
      private Map<Task, ActionTimes> taskActionTimesMap;
      private Map<Vehicle, List<Action>> vehicleActionMap;
-     private Map<Task, Vehicle> taskVehicleMap;
+
+
+    public Solution(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
+
+        this.tasksDomain = tasksDomain;
+        this.vehiclesDomain = vehiclesDomain;
+
+        taskActionTimesMap = new HashMap<>();
+        vehicleActionMap = new HashMap<>();
+    }
 
     /**
      * This constructor creates a new Solution object as a deep copy of the old solution
@@ -30,14 +51,16 @@ public class Solution {
      */
     public Solution(Solution oldSolution) {
 
-        this.vehicleTasksMap = copyVehicleTasks(oldSolution.vehicleTasksMap);
         this.vehicleActionMap = copyVehicleActions(oldSolution.vehicleActionMap);
         this.taskActionTimesMap = copyActionTimes(oldSolution.taskActionTimesMap);
-        this.taskVehicleMap = new HashMap<>(oldSolution.getTaskVehicleMap());
-
 
     }
 
+    /**
+     * deep copy of actionTime value for each task
+     * @param taskActionTimesMap
+     * @return
+     */
     private Map<Task, ActionTimes> copyActionTimes(Map<Task, ActionTimes> taskActionTimesMap) {
 
         HashMap<Task, ActionTimes> returnMap = new HashMap<>();
@@ -50,7 +73,7 @@ public class Solution {
     }
 
     /**
-     * Copying the Vehicle Actions map
+     * Deep Copy the Vehicle Actions map in the new Solution object
      * @param vehicleActionMap
      * @return
      */
@@ -66,38 +89,12 @@ public class Solution {
     }
 
 
+    // CONSTRAINTS //
+
     /**
-     * Copying the Vehicle Tasks map
-     * @param vehicleTasksMap
-     * @return
-     */
-    private Map<Vehicle, List<Task>> copyVehicleTasks(Map<Vehicle, List<Task>> vehicleTasksMap) {
-
-        HashMap<Vehicle, List<Task>> returnMap = new HashMap<>();
-
-        for (Map.Entry<Vehicle, List<Task>> vehicleListEntry : vehicleTasksMap.entrySet()) {
-            returnMap.put(vehicleListEntry.getKey(), new ArrayList<>(vehicleListEntry.getValue()));
-        }
-
-        return returnMap;
-    }
-
-    public Solution(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
-
-        Solution.tasksDomain = tasksDomain;
-        Solution.vehiclesDomain = vehiclesDomain;
-
-        vehicleTasksMap = new HashMap<>();
-        taskActionTimesMap = new HashMap<>();
-        vehicleActionMap = new HashMap<>();
-        taskVehicleMap = new HashMap<>();
-    }
-
-    // CONSTRAINT
-    /**
-     * constraint on the fact that each task of the vehicle has a weight lower
-     * then the capacity of the vehicle and also that the sum of the wieghts
-     * is lower than the capacity
+     * constraint on the fact that, in every step of our vehicle,
+     * the total weight of the carried tasks must be lower than the
+     * capacity of the vehicle
      * @param vehicle
      * @return
      */
@@ -106,6 +103,11 @@ public class Solution {
         List<Action> actionsList = vehicleActionMap.get(vehicle);
 
         int currentLoad = 0;
+
+        /*
+        for each action step, we verify that the current load is
+        lower than the vehicle capacity, then we update the current load
+         */
         for (Action action : actionsList) {
 
             if(currentLoad > vehicle.capacity())
@@ -122,7 +124,6 @@ public class Solution {
         }
 
         return true;
-
     }
 
     /**
@@ -134,11 +135,6 @@ public class Solution {
     public boolean timeConstraint(Task task){
 
         ActionTimes actionTimes = taskActionTimesMap.get(task);
-
-        if(actionTimes == null){
-            int i = 0;
-        }
-
 
         return actionTimes.pickUpTime < actionTimes.deliveryTime;
 
@@ -183,7 +179,11 @@ public class Solution {
         return returnValue && allTasksDeliveredConstraint();
     }
 
-
+    /**
+     * computes the total cost for this Solution, that is the
+     * sum of all the vehicle costs.
+     * @return
+     */
     public double objectiveFunction(){
 
         double totalCost = 0.;
@@ -195,12 +195,17 @@ public class Solution {
         return totalCost;
     }
 
+    /**
+     * computes the vehicle cost simulating is total path considering its actionsList.
+     * It assumes that the solution is valid
+     */
     private double vehicleCost(Vehicle vehicle) {
 
         List<Action> vehicleActions = vehicleActionMap.get(vehicle);
 
         if(!vehicleActions.isEmpty()){
 
+            // cost initialized with the cost to go to the first pickup city from homeCity of the vehicle
             double cost = vehicle.getCurrentCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();
 
             for (int i = 0; i < vehicleActions.size() - 1; i++) {
@@ -226,28 +231,18 @@ public class Solution {
                 }
 
                 cost += currentCity.distanceTo(nextCity) * vehicle.costPerKm();
-
             }
 
             return cost;
-
         }
 
         return 0.;
-
     }
 
-    public TaskSet getTasksDomain() {
-        return tasksDomain;
-    }
-
-    public List<Vehicle> getVehiclesDomain() {
+   public List<Vehicle> getVehiclesDomain() {
         return vehiclesDomain;
     }
 
-    public Map<Vehicle, List<Task>> getVehicleTasksMap() {
-        return vehicleTasksMap;
-    }
 
     public Map<Task, ActionTimes> getTaskActionTimesMap() {
         return taskActionTimesMap;
@@ -257,7 +252,4 @@ public class Solution {
         return vehicleActionMap;
     }
 
-    public Map<Task, Vehicle> getTaskVehicleMap() {
-        return taskVehicleMap;
-    }
 }

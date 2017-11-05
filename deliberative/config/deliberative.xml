@@ -7,13 +7,13 @@
 	<settings import="config/settings_default.xml" />
 	
 	<!-- load the topology -->
-	<topology import="config/topology/switzerland.xml" />
+	<topology import="config/topology/england.xml" />
 	
 	<!-- load agents -->
 	<agents import="config/agents.xml" />
 	
 	<!-- define task distribution -->
-	<tasks number="10" rngSeed="23456">
+	<tasks number="14" rngSeed="23456">
 		<!--
 			the probabilities, rewards and weight of tasks
 		-->
@@ -22,11 +22,63 @@
 		<weight distribution="constant" value="3" />
 
 	</tasks>
-	
-	<!-- the companies and vehicles in the simulation -->
+
 	<companies>
 		<company name="Company A">
+
 			<!-- the first vehicle (blue) -->
+			<vehicle name="Vehicle 1">
+				<set color="#0000ff" />
+				<set home="Newcastle" />
+				<set speed="90" />
+				<set capacity="30" />
+				<set cost-per-km="5" />
+			</vehicle>
+		</company>
+		<company name="Company B">
+			<!-- the second vehicle (red) -->
+			<vehicle name="Vehicle 2">
+				<set color="#ff0000" />
+				<set home="Cardiff" />
+				<set speed="90" />
+				<set capacity="30" />
+				<set cost-per-km="5" />
+			</vehicle>
+		</company>
+		<company name="Company C">
+			<!-- the third vehicle (green) -->
+			<vehicle name="Vehicle 3">
+				<set color="#00ff00" />
+				<set home="Plymouth" />
+				<set speed="90" />
+				<set capacity="30" />
+				<set cost-per-km="5" />
+			</vehicle>
+		</company>
+			<!-- the fourth vehicle (yellow)
+            <vehicle name="Vehicle 4">
+                <set color="#ffff00" />
+                <set home="Norwich" />
+                <set speed="90" />
+                <set capacity="30" />
+                <set cost-per-km="5" />
+            </vehicle>-->
+		<company name="Company C">
+			<vehicle name="Vehicle 5">
+				<set color="#ffff00" />
+				<set home="London" />
+				<set speed="90" />
+				<set capacity="30" />
+				<set cost-per-km="5" />
+			</vehicle>
+
+		</company>
+	</companies>
+	
+	<!-- the companies and vehicles in the simulation
+	<companies>
+		<company name="Company A">
+
 			<vehicle name="Vehicle 1">
 				<set color="#0000ff" />
 				<set home="Lausanne" />
@@ -37,7 +89,7 @@
 		</company>
 		
 		<company name="Company B">
-			<!-- the second vehicle (red) -->
+
 			<vehicle name="Vehicle 2">
 				<set color="#ff0000" />
 				<set home="Zürich" />
@@ -48,7 +100,7 @@
 		</company>
 		
 		<company name="Company C">
-			<!-- the third vehicle (green) -->
+
 			<vehicle name="Vehicle 3">
 				<set color="#00ff00" />
 				<set home="Bern" />
@@ -59,7 +111,7 @@
 		</company>
 		
 		<company name="Company D">
-			<!-- the fourth vehicle (yellow) -->
+
 			<vehicle name="Vehicle 4">
 				<set color="#ffff00" />
 				<set home="Basel" />
@@ -70,7 +122,7 @@
 		</company>
 		
 		<company name="Company E">
-			<!-- the fifth vehicle (magenta) -->
+
 			<vehicle name="Vehicle 5">
 				<set color="#ff00ff" />
 				<set home="Thun" />
@@ -81,7 +133,7 @@
 		</company>
 		
 		<company name="Company F">
-			<!-- the sixth vehicle (cyan) -->
+
 			<vehicle name="Vehicle 6">
 				<set color="#00ffff" />
 				<set home="Luzern" />
@@ -90,6 +142,6 @@
 				<set cost-per-km="5" />
 			</vehicle>
 		</company>
-	</companies>
+	</companies>-->
 	
 </configuration>

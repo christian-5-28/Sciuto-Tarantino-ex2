@@ -1,7 +1,7 @@
 package template;
 
 /**
- * Created by lorenzotara on 03/11/17.
+ * ActionTimes class: it models the pickUp and delivery times.
  */
 public class ActionTimes {
 

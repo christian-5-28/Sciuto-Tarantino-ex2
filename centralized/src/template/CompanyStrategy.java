@@ -3,38 +3,60 @@ package template;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
-import logist.topology.Topology;
 
 import java.util.*;
 
 /**
- * Created by lorenzotara on 03/11/17.
+ * CompanyStrategy class:
+ * this class models the behaviour for finding a centralized solution
+ * with multiple vehicles for the PDP as a COP (Constraint Optimization Problem).
+ * The SLS algorithm is implemented here with all the its supporting methods.
+ * More details in the descriptions of each method.
  */
 public class CompanyStrategy {
 
-    private static final double EPSILON = 1e-2;
     private TaskSet tasksDomain;
     private List<Vehicle> vehiclesDomain;
     private int equalCostCounter = 0;
+
 
     public CompanyStrategy(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
         this.tasksDomain = tasksDomain;
         this.vehiclesDomain = vehiclesDomain;
     }
 
-    public Solution SLS(int maxIter, double probability) {
+    /**
+     * Stochastic Local Search algorithm. Starting from an initial solution,
+     * in each iteration it creates list of neighbors Solutions of the current Solution,
+     * then it finds the solution with the minimum cost among the neighbor solutions
+     * and with a probability p it selects this new solution, otherwise it keeps with
+     * the current solution (more details in the description of the "localChoice" method).
+     * In each steps the global best solution (minimum cost found in this search)
+     * is updated if the new solution chosen has a lower cost.
+     * @param maxIter
+     * @param probability
+     * @param minimaThreshold
+     * @return
+     */
+    public Solution SLS(int maxIter, double probability, int minimaThreshold) {
 
+        //initializes a first solution
         Solution solution = initialSolution();
         Solution bestSolution = solution;
-        //Solution solution = naiveSolution();
 
         for (int i = 0; i < maxIter; i++) {
 
             System.out.println("iteration: " + i);
             Solution oldSolution = new Solution(solution);
+
+            //creates the neighbors solutions
             List<Solution> neighbors = chooseNeighbors(oldSolution);
-            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), 20, i);
+
+            //selects a new solution
+            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), minimaThreshold, i);
             System.out.println("solution cost: " + solution.objectiveFunction());
+
+            //check for the update of the global best solution
             if(solution.objectiveFunction() < bestSolution.objectiveFunction())
                 bestSolution = solution;
 
@@ -45,64 +67,18 @@ public class CompanyStrategy {
 
     }
 
-    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, double minimumCost, int minimaThreshold, int iteration) {
 
-        Solution bestSolution = oldSolution;
-
-        for (Solution neighbor : neighbors) {
-            if (neighbor.objectiveFunction() < bestSolution.objectiveFunction()) {
-                bestSolution = neighbor;
-            }
-        }
-
-        double rand = new Random().nextDouble();
-
-        Solution solutionChosen = null;
-
-        if(rand < probability)
-            solutionChosen = bestSolution;
-
-        else
-            solutionChosen = oldSolution;
-
-        if((int)solutionChosen.objectiveFunction() == (int)minimumCost){
-            equalCostCounter++;
-        }
-        else {
-            equalCostCounter = 0;
-        }
-
-        if(equalCostCounter == minimaThreshold){
-            equalCostCounter = 0;
-            System.out.println("RANDOM CHOICHE AT ITERATION: " + iteration);
-            int randIndex = new Random().nextInt(neighbors.size());
-            solutionChosen = neighbors.get(randIndex);
-
-        }
-
-
-        return solutionChosen;
-
-
-       /* if(rand <= probability)
-            return bestSolution;
-
-        if (rand > probability && rand <= 2*probability)
-            return oldSolution;
-
-        int randIndex = new Random().nextInt(neighbors.size());
-
-        return neighbors.get(randIndex);*/
-
-    }
-
+    /**
+     * this method creates a first Solution where all the tasks with pickupCity the same
+     * homecity of a vehicle are assigned to that vehicle. Then, if there are task not assigned,
+     * they are splitted equally to each vehicle (always considering the weight of the task)
+     * @return
+     */
     private Solution initialSolution(){
 
         Solution solution = new Solution(tasksDomain, vehiclesDomain);
 
         for (Vehicle vehicle : vehiclesDomain) {
-
-            solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
             solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
         }
 
@@ -110,191 +86,110 @@ public class CompanyStrategy {
         ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
         ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
 
-        int numberOfvehicles = vehicles.size();
-
-        int vehicleIndex = 0;
-
+        /*
+            for each vehicle we control if there are task in its homeCity, if so,
+            we add pickup Action to the actionList of the vehicle. after all the tasks
+            are taken for that vehicle, we add the delivery action to the actionList
+            (thanks to the taskToDeliver list).
+         */
         for (Vehicle vehicle : vehicles) {
 
+            List<Task> taskToDeliver = new ArrayList<>();
             for (Task task : tasksDomain) {
                 if(task.pickupCity.equals(vehicle.homeCity()) && task.weight <= vehicle.capacity() - vehicle.getCurrentTasks().weightSum()){
 
-                    solution.getVehicleTasksMap().get(vehicle).add(task);
+                    solution.getVehicleActionMap().get(vehicle).add(new Action(Action.ActionType.PICKUP, task));
+                    taskToDeliver.add(task);
                     tasksToAdd.remove(task);
                 }
             }
 
-        }
-        //TODO: while non vuota
-        for (Task task : tasksToAdd) {
+            for (Task task : taskToDeliver) {
+                solution.getVehicleActionMap().get(vehicle).add((new Action(Action.ActionType.DELIVERY, task)));
+                int indexOfPickup = taskToDeliver.indexOf(task);
 
+                solution.getTaskActionTimesMap().put(task, new ActionTimes(indexOfPickup, indexOfPickup + taskToDeliver.size()));
+
+            }
+
+        }
+
+        int numberOfVehicles = vehicles.size();
+        int vehicleIndex = 0;
+
+        int taskIndex = 0;
+        int taskToAddNumber = tasksToAdd.size();
+        /*
+            if there are still task to be taken they are assigned to each vehicle equally,
+            considering the weight of the task. We add the pickUp and delivery action
+            to the actionList of the vehicle consequentially.
+         */
+        while (!tasksToAdd.isEmpty()) {
+
+            Task task = tasksToAdd.get(taskIndex);
             Vehicle vehicle = vehicles.get(vehicleIndex);
-            vehicleIndex = (vehicleIndex + 1 ) % numberOfvehicles;
+            vehicleIndex = (vehicleIndex + 1 ) % numberOfVehicles;
+
             if(task.weight <= vehicle.capacity() - vehicle.getCurrentTasks().weightSum()){
-                solution.getVehicleTasksMap().get(vehicle).add(task);
-            }
-        }
 
-        for (Vehicle vehicle : vehicles) {
+                List<Action> actions = solution.getVehicleActionMap().get(vehicle);
 
-            List<Task> vehicleTasks = solution.getVehicleTasksMap().get(vehicle);
-
-            createActions(solution, vehicle, vehicleTasks);
-
-        }
-
-        return solution;
-
-    }
-
-    /**
-     * We create a first naive valid solution
-     * @return
-     */
-    private Solution naiveSolution() {
-
-        class LoadComparator implements Comparator<Vehicle> {
-
-            @Override
-            public int compare(Vehicle o1, Vehicle o2) {
-                if(o1.capacity() > o2.capacity())
-                    return -1;
-
-                if(o1.capacity() < o2.capacity())
-                    return 1;
-
-                return 0;
-            }
-        }
-
-        Solution solution = new Solution(tasksDomain, vehiclesDomain);
-
-        for (Vehicle vehicle : vehiclesDomain) {
-
-            solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
-            solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
-        }
-
-        ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
-        ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
-        Collections.sort(vehicles, new LoadComparator());
-
-        // The vehicles are ordered following an descending order of load capacity.
-        // We fill every vehicle in this order until the vehicle is full.
-        for (Vehicle vehicle : vehicles) {
-
-            if (tasksToAdd.isEmpty()) break;
-
-            int load = 0;
-
-            ArrayList<Task> vehicleTasks = new ArrayList<>();
-
-            for (Task task : tasksDomain) {
-
-                if(!tasksToAdd.contains(task))
-                    continue;
-
-                if (task.weight <= vehicle.capacity() - load) {
-
-                    vehicleTasks.add(task);
-                    tasksToAdd.remove(task);
-
-                    // Updating the task->Vehicle map
-                    solution.getTaskVehicleMap().put(task, vehicle);
-
-                    load += task.weight;
-                }
-                else {
-                    break;
-                }
-            }
-
-            // Updating the vehicle->List<Task> map
-            solution.getVehicleTasksMap().put(vehicle, vehicleTasks);
-
-            // We call this method that create all the actions of the vehicle and update their maps
-            createActions(solution, vehicle, vehicleTasks);
-        }
-
-        return solution;
-
-    }
-
-    /**
-     * For every task of the vehicle, we create two actions (pickUp and delivery) and we put them in order
-     * in the actionList that is the value of the map that has as key the vehicle.
-     * Then we update for each task the times of pickUp of delivery.
-     * @param solution
-     * @param vehicle
-     * @param vehicleTasks
-     */
-    private void createActions(Solution solution, Vehicle vehicle, List<Task> vehicleTasks) {
-
-        ArrayList<Action> actions = new ArrayList<>();
-
-        ArrayList<Task> tasksToAdd = new ArrayList<>(vehicleTasks);
-        Topology.City currentCity = vehicle.getCurrentCity();
-
-        ArrayList<Task> tasksToDeliver = new ArrayList<>();
-
-        for (Task task : tasksToAdd) {
-            if (task.pickupCity.equals(currentCity)) {
                 Action pickUp = new Action(Action.ActionType.PICKUP, task);
+                Action delivery = new Action(Action.ActionType.DELIVERY, task);
                 actions.add(pickUp);
-                tasksToDeliver.add(task);
+                actions.add(delivery);
+                solution.getTaskActionTimesMap().put(task, new ActionTimes(actions.indexOf(pickUp), actions.indexOf(delivery)));
+
+                tasksToAdd.remove(task);
+                taskToAddNumber = tasksToAdd.size();
+
+                if(taskToAddNumber != 0)
+                    taskIndex = (taskIndex + 1) % taskToAddNumber;
+
             }
         }
 
-        for (Task task : tasksToDeliver) {
+        return solution;
 
-            Action delivery = new Action(Action.ActionType.DELIVERY, task);
-            actions.add(delivery);
-            tasksToAdd.remove(task);
-
-            int indexOfPickup = tasksToDeliver.indexOf(task);
-
-            solution.getTaskActionTimesMap().put(task, new ActionTimes(indexOfPickup, indexOfPickup + tasksToDeliver.size()));
-        }
-
-        for (Task task: tasksToAdd) {
-
-            Action pickUp = new Action(Action.ActionType.PICKUP, task);
-            Action delivery = new Action(Action.ActionType.DELIVERY, task);
-            actions.add(pickUp);
-            actions.add(delivery);
-
-            solution.getTaskActionTimesMap().put(task, new ActionTimes(actions.indexOf(pickUp), actions.indexOf(delivery)));
-
-        }
-
-        solution.getVehicleActionMap().put(vehicle, actions);
     }
 
+    /**
+     *
+     * This method creates new Solution to be explored in the search of the SLS algorithm.
+     * First, new Solution are created by changing one random task from a random vehicle to
+     * all the other vehicle ( we obtain then a new solution for each vehicle different from
+     * the one selected. all the new Solution are added to a neighbor solution list.
+     * Second, for the random vehicle selected, we change to order of two actions of its
+     * actionList, we do this pair-wise for each couple of actions. A new solution is made
+     * for each action changed. we add the new solution to the neighbor list.
+     * Finally, the neighbor list is filtered, it means that every solution is checked for
+     * validation about the constraint that it has.
+     *
+     */
     public List<Solution> chooseNeighbors(Solution oldSolution) {
 
         ArrayList<Solution> neighbors = new ArrayList<>();
 
         // Getting random vehicle from the vehicle domain
-        List<Vehicle> vehiclesDomain = oldSolution.getVehiclesDomain();
-
         List<Vehicle> vehiclesWithTask = new ArrayList<>();
         for (Vehicle vehicle : vehiclesDomain) {
-            if(!oldSolution.getVehicleTasksMap().get(vehicle).isEmpty()){
+            if(!oldSolution.getVehicleActionMap().get(vehicle).isEmpty()){
                 vehiclesWithTask.add(vehicle);
             }
         }
-
         int randVehicleIndex = new Random().nextInt(vehiclesWithTask.size());
         Vehicle randVehicle = vehiclesWithTask.get(randVehicleIndex);
 
         // Getting random task from the task domain of the vehicle
-        List<Task> vehicleTasks = oldSolution.getVehicleTasksMap().get(randVehicle);
-        int randTaskIndex = new Random().nextInt(vehicleTasks.size());
-        Task taskToSwitch = oldSolution.getVehicleTasksMap().get(randVehicle).get(randTaskIndex);
+        List<Action> vehicleActions = oldSolution.getVehicleActionMap().get(randVehicle);
+        int randTaskIndex = new Random().nextInt(vehicleActions.size());
+        Task taskToSwitch = oldSolution.getVehicleActionMap().get(randVehicle).get(randTaskIndex).getTask();
 
-        // For every vehicle in the domain, if the vehicle is != randVehicle, then
-        // we switch the random task between the two vehicles and we create
-        // a new candidate solution
+        /*
+        For every vehicle in the domain, if the vehicle is != randVehicle, then
+        we switch the random task between the two vehicles and we create
+        a new candidate solution
+        */
 
         System.out.println("starting switch task");
         for (Vehicle vehicle : oldSolution.getVehiclesDomain()) {
@@ -306,17 +201,17 @@ public class CompanyStrategy {
             }
         }
 
-        // If the current vehicle has more than one task, we compute all the possible
-        // solutions considering all the possible permutations of the actions.
-        // Then we add them to the neighbors solution List
 
+        /*
+            If the current vehicle has more than one task, we change the order of two actions
+            in the actionsList of the vehicle. We do this for pair-wise action element
+            and for each change we obtain a new local Solution
+         */
         System.out.println("starting permutation");
-        /*if (oldSolution.getVehicleTasksMap().get(randVehicle).size() >= 2) {
-            neighbors.addAll(actionPermutation(oldSolution, randVehicle));
-        }*/
 
         List<Action> vehicleActionsList = oldSolution.getVehicleActionMap().get(randVehicle);
         int vehicleActionsListSize = vehicleActionsList.size();
+
         if(vehicleActionsListSize > 2){
             for(int firstIndex = 0; firstIndex < vehicleActionsListSize - 1; firstIndex++){
                 for(int secondIndex = firstIndex + 1; secondIndex < vehicleActionsListSize; secondIndex++){
@@ -325,41 +220,52 @@ public class CompanyStrategy {
             }
         }
 
+        /*
+            Before returning all the neighbors solutions founded, we filter the new solution in order to
+            obtain only valid new solutions.
+         */
         neighbors = filterOnConstraints(neighbors);
 
         return neighbors;
 
     }
 
+    /**
+     * it changes the order of two actions in the actionList of the selected vehicle.
+     * The two actions are selected by index. After the change, the updateTime Method
+     * modifies the taskActionTimes map of the solution due to the order change in the
+     * actionList.
+     */
     private Solution swapActions(Solution oldSolution, Vehicle vehicle, List<Action> vehicleActionsList, int firstIndex, int secondIndex) {
 
         Solution newSolution = new Solution(oldSolution);
 
+        //we select the two actions
         Action firstAction = vehicleActionsList.get(firstIndex);
         Action secondAction = vehicleActionsList.get(secondIndex);
 
+        //we change the order of the two actions in the vehicleAction list
         newSolution.getVehicleActionMap().get(vehicle).set(firstIndex, secondAction);
         newSolution.getVehicleActionMap().get(vehicle).set(secondIndex, firstAction);
 
+        //due to the order change, we update the taskActionTimes map in the solution.
         updateTimes(newSolution, vehicle);
 
         return newSolution;
 
     }
 
-
+    /**
+     * removes the selected task from the vehicle 1 and adds it in the vehicle 2. In order to make more
+     * simple the way to get and remove the actions regarding the selected task, this method uses the taskActiontimes
+     * map that, for each task has a actionTime values that contains the pickUpTime value of the task
+     * (the index of the pickup action of that task in the actionList) and the deliveryTime of the task.
+     * It adds the two actions randomly in the second vehicle (respecting the order of pickup and delivery), then
+     * the updateTime method is called on the new solution and on the two vehicles.
+     */
     public Solution changingVehicle(Solution oldSolution, Vehicle v1, Vehicle v2, Task taskToSwitch) {
 
         Solution tempSolution = new Solution(oldSolution);
-
-        // Changing the value of the map task -> vehicle from t->v1 to t->v2
-        tempSolution.getTaskVehicleMap().put(taskToSwitch, v2);
-
-        // Adding t1 to the list of tasks of v2
-        // In vehicle tasksMap it's mandatory to have every vehicle as key
-        // Removing t1 from the list of tasks of v1
-        tempSolution.getVehicleTasksMap().get(v2).add(taskToSwitch);
-        tempSolution.getVehicleTasksMap().get(v1).remove(taskToSwitch);
 
         // We get the actionTimes (indexes of pickup and delivery of the task in the vehicle action list)
         ActionTimes actionTimes = tempSolution.getTaskActionTimesMap().get(taskToSwitch);
@@ -370,12 +276,8 @@ public class CompanyStrategy {
         tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.pickUpTime);
         tempSolution.getVehicleActionMap().get(v1).remove(actionTimes.deliveryTime - 1);
 
-        // We add those two actions to the vehicle v2
-        //tempSolution.getVehicleActionMap().get(v2).add(pickUp);
-        //tempSolution.getVehicleActionMap().get(v2).add(delivery);
 
         // We add those two actions to the vehicle v2 in a random position
-
         List<Action> v2Actions = tempSolution.getVehicleActionMap().get(v2);
         int pickUpIndex = new Random().nextInt(v2Actions.size() + 1);
 
@@ -402,7 +304,7 @@ public class CompanyStrategy {
             }
         }
 
-
+        //after the task is successfully moved, we update the taskActionTimesMap.
         updateTimes(tempSolution, v1);
         updateTimes(tempSolution, v2);
 
@@ -440,73 +342,8 @@ public class CompanyStrategy {
 
 
     /**
-     * Taking the current actions of randVehicle, we compose all the permutations of the actions
-     * and we return all of them in a List of List of solutions composed by every permutation
-     * @param oldSolution
-     * @param randVehicle
-     * @return
-     */
-    private ArrayList<Solution> actionPermutation(Solution oldSolution, Vehicle randVehicle) {
-
-        List<Action> actions = oldSolution.getVehicleActionMap().get(randVehicle);
-
-        // This will be the wrapper of all the permutations
-        ArrayList<List<Action>> permutations = new ArrayList<>();
-
-        permuteHelper(actions, 0, permutations);
-
-        // This will be the wrapper of all the solutions
-        ArrayList<Solution> solutions = new ArrayList<>();
-
-        // Here we create one solution for each permutation
-        for (List<Action> permutation : permutations) {
-
-            Solution newSolution = new Solution(oldSolution);
-            newSolution.getVehicleActionMap().put(randVehicle, permutation);
-            updateTimes(newSolution, randVehicle);
-
-            solutions.add(newSolution);
-        }
-
-        return solutions;
-
-    }
-
-    /**
-     * Recursive function that compute all the permutations for a list of actions
-     * @param actionList
-     * @param index
-     * @param blankList
-     */
-    private static void permuteHelper(List<Action> actionList, int index, ArrayList<List<Action>> blankList){
-
-        //If we are at the last element - nothing left to permute
-        if (index >= actionList.size() - 1) {
-
-            blankList.add(new ArrayList<>(actionList));
-            return;
-        }
-
-        //For each index in the sub array arr[index...end]
-        for (int i = index; i < actionList.size(); i++) {
-
-            //Swap the elements at indices index and i
-            Action temp = actionList.get(index);
-            actionList.set(index, actionList.get(i));
-            actionList.set(i, temp);
-
-            //Recurse on the sub array arr[index+1...end]
-            permuteHelper(actionList, index+1, blankList);
-
-            //Swap the elements back
-            temp = actionList.get(index);
-            actionList.set(index, actionList.get(i));
-            actionList.set(i, temp);
-        }
-    }
-
-    /**
-     * We create a filtered list of valid solutions
+     * Creates a filtered list of valid solutions, using the isValid method of each solution
+     * that checks the satisfaction of the constraints of the solution
      * @param neighbors
      */
     private ArrayList<Solution> filterOnConstraints(ArrayList<Solution> neighbors) {
@@ -521,7 +358,136 @@ public class CompanyStrategy {
         }
 
         return returnList;
-
     }
+
+    /**
+     * First, it searches in the neighbor list the solution with the lower value of the objective function.
+     * Then it will select with a probability p this new solution, otherwise it will select the old solution.
+     * If the value of the objective function is the same as the objective function value of the previous solution
+     * (previous iteration of the SLS) then a counter is incremented and, when this counter is equal to a selected
+     * threshold, the method will choose a random Solution in the neighbor list. This last step is done
+     * in order to not be stuck in a local minimum and try to find new solutions.
+     */
+    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, double minimumCost, int minimaThreshold, int iteration) {
+
+        Solution bestSolution = oldSolution;
+
+        //we find the solution with the minimum cost
+        for (Solution neighbor : neighbors) {
+            if (neighbor.objectiveFunction() < bestSolution.objectiveFunction()) {
+                bestSolution = neighbor;
+            }
+        }
+
+        double rand = new Random().nextDouble();
+        Solution solutionChosen;
+
+        // we select the new solution with a certain probability
+        if(rand < probability)
+            solutionChosen = bestSolution;
+
+        else
+            solutionChosen = oldSolution;
+
+        /*
+          we check if the cost of the solution chosen is the same as the cost of
+          the previous solution
+         */
+        if((int)solutionChosen.objectiveFunction() == (int)minimumCost){
+            equalCostCounter++;
+        }
+        else {
+            equalCostCounter = 0;
+        }
+
+        /*
+            if the counter is equal to a specific threshold we choose a random
+            solution in the neighbor list. This is done in order to avoid local
+            minimum.
+         */
+        if(equalCostCounter == minimaThreshold && !neighbors.isEmpty()){
+            equalCostCounter = 0;
+            System.out.println("RANDOM CHOICE AT ITERATION: " + iteration);
+            int randIndex = new Random().nextInt(neighbors.size());
+            solutionChosen = neighbors.get(randIndex);
+
+        }
+
+        return solutionChosen;
+    }
+
+
+    /**
+     * We create a first naive valid solution
+     * @return
+
+    private Solution naiveSolution() {
+
+    class LoadComparator implements Comparator<Vehicle> {
+
+    @Override
+    public int compare(Vehicle o1, Vehicle o2) {
+    if(o1.capacity() > o2.capacity())
+    return -1;
+
+    if(o1.capacity() < o2.capacity())
+    return 1;
+
+    return 0;
+    }
+    }
+
+    Solution solution = new Solution(tasksDomain, vehiclesDomain);
+
+    for (Vehicle vehicle : vehiclesDomain) {
+
+    solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
+    solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
+    }
+
+    ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
+    ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
+    Collections.sort(vehicles, new LoadComparator());
+
+    // The vehicles are ordered following an descending order of load capacity.
+    // We fill every vehicle in this order until the vehicle is full.
+    for (Vehicle vehicle : vehicles) {
+
+    if (tasksToAdd.isEmpty()) break;
+
+    int load = 0;
+
+    ArrayList<Task> vehicleTasks = new ArrayList<>();
+
+    for (Task task : tasksDomain) {
+
+    if(!tasksToAdd.contains(task))
+    continue;
+
+    if (task.weight <= vehicle.capacity() - load) {
+
+    vehicleTasks.add(task);
+    tasksToAdd.remove(task);
+
+    // Updating the task->Vehicle map
+    solution.getTaskVehicleMap().put(task, vehicle);
+
+    load += task.weight;
+    }
+    else {
+    break;
+    }
+    }
+
+    // Updating the vehicle->List<Task> map
+    solution.getVehicleTasksMap().put(vehicle, vehicleTasks);
+
+    // We call this method that create all the actions of the vehicle and update their maps
+    createActions(solution, vehicle, vehicleTasks);
+    }
+
+    return solution;
+
+    }*/
 
 }

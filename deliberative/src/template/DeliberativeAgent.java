@@ -68,6 +68,8 @@ public class DeliberativeAgent implements DeliberativeBehavior {
                 double finishTime = System.currentTimeMillis();
 
                 System.out.println("time to calculate BFS: " + ((finishTime - startTime)/1000) + " seconds");
+
+                System.out.println("cost vehicle " + vehicle.name() + ": " + plan.totalDistance()*vehicle.costPerKm());
                 break;
 
             default:

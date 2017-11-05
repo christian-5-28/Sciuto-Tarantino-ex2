@@ -13,7 +13,6 @@ import logist.topology.Topology;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by Christian on 03/11/2017.
@@ -58,7 +57,7 @@ public class CentralizedCompany implements CentralizedBehavior {
 
         companyStrategy = new CompanyStrategy(tasks, vehicles);
         System.out.println("starting SLS");
-        bestSolution = companyStrategy.SLS(20000, 0.35);
+        bestSolution = companyStrategy.SLS(20000, 0.35, 20);
         System.out.println("completed SLS");
 
         List<Plan> planList = new ArrayList<>();
@@ -66,20 +65,6 @@ public class CentralizedCompany implements CentralizedBehavior {
         for (Vehicle vehicle : vehicles) {
             planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
         }
-
-
-//		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-        /*Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
-
-        List<Plan> plans = new ArrayList<>();
-        plans.add(planVehicle1);
-        while (plans.size() < vehicles.size()) {
-            plans.add(Plan.EMPTY);
-        }
-
-        long time_end = System.currentTimeMillis();
-        long duration = time_end - time_start;
-        System.out.println("The plan was generated in "+duration+" milliseconds.");*/
 
         return planList;
     }
