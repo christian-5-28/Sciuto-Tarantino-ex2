@@ -54,7 +54,7 @@ public class CompanyStrategy {
             List<Solution> neighbors = chooseNeighbors(oldSolution);
 
             //selects a new solution
-            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), minimaThreshold, i);
+            solution = localChoice(neighbors, probability, oldSolution, minimaThreshold);
             System.out.println("solution cost: " + solution.objectiveFunction());
 
             //check for the update of the global best solution
@@ -369,7 +369,7 @@ public class CompanyStrategy {
      * threshold, the method will choose a random Solution in the neighbor list. This last step is done
      * in order to not be stuck in a local minimum and try to find new solutions.
      */
-    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, double minimumCost, int minimaThreshold, int iteration) {
+    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, int minimaThreshold) {
 
         Solution bestSolution = oldSolution;
 
@@ -394,7 +394,7 @@ public class CompanyStrategy {
           we check if the cost of the solution chosen is the same as the cost of
           the previous solution
          */
-        if((int)solutionChosen.objectiveFunction() == (int)minimumCost){
+        if((int)solutionChosen.objectiveFunction() == (int)oldSolution.objectiveFunction()){
             equalCostCounter++;
         }
         else {
@@ -408,13 +408,34 @@ public class CompanyStrategy {
          */
         if(equalCostCounter == minimaThreshold && !neighbors.isEmpty()){
             equalCostCounter = 0;
-            System.out.println("RANDOM CHOICE AT ITERATION: " + iteration);
             int randIndex = new Random().nextInt(neighbors.size());
             solutionChosen = neighbors.get(randIndex);
 
         }
 
         return solutionChosen;
+    }
+
+    Solution localChoiceProbability(List<Solution> neighbors, double probability, Solution oldSolution){
+
+        Solution bestSolution = oldSolution;
+
+        //we find the solution with the minimum cost
+        for (Solution neighbor : neighbors) {
+            if (neighbor.objectiveFunction() < bestSolution.objectiveFunction()) {
+                bestSolution = neighbor;
+            }
+        }
+
+        double rand = new Random().nextDouble();
+
+        // we select the new solution with a certain probability
+        if(rand < probability)
+            return bestSolution;
+
+        else
+            return oldSolution;
+
     }
 
 
