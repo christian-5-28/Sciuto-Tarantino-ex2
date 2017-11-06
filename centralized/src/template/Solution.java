@@ -238,6 +238,7 @@ public class Solution {
 
         for (Task task : tasksDomain) {
             returnValue = returnValue && timeConstraint(task);
+            returnValue = returnValue && taskUnique(task);
         }
 
         for (Vehicle vehicle : vehiclesDomain) {
@@ -245,7 +246,7 @@ public class Solution {
         }
         returnValue = returnValue && allTasksDeliveredConstraint();
 
-        return returnValue && allTasksDeliveredConstraint();
+        return returnValue && allTasksDeliveredConstraint() && actionsAtDifferentTimesConstraint();
     }
 
     /**
