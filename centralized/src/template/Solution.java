@@ -91,6 +91,74 @@ public class Solution {
 
     // CONSTRAINTS //
 
+    //TODO: check and add to isValid()
+
+    /**
+     * This constraint returns true iff one task is contained in only one vehicle actionList and returns false otherwise
+     * @param task
+     * @return
+     */
+    public boolean taskUnique(Task task) {
+
+        boolean oneVehicle = false;
+        // For every vehicle
+        for (Vehicle vehicle : vehiclesDomain) {
+
+            // We take all the actions
+            for (Action action : vehicleActionMap.get(vehicle)) {
+
+                // We check the task only one time (reason why there is actionType == PICKUP)
+                if (action.getActionType() == Action.ActionType.PICKUP && action.getTask().equals(task)) {
+                    // If the task was never found before, it means that one vehicle has it
+                    if (!oneVehicle) oneVehicle = true;
+                    // Else, the task has already been found and it has been found again
+                    else return false;
+                }
+            }
+        }
+
+        return oneVehicle;
+    }
+
+    //TODO: check and add this constraint to isValid()
+
+    /**
+     * This function returns true if every vehicle do all its actions in different times
+     * @return
+     */
+    public boolean actionsAtDifferentTimesConstraint() {
+
+        boolean returnValue = true;
+
+        // For every vehicle we get all the actions
+        for (Vehicle vehicle : vehiclesDomain) {
+            List<Action> actionList = vehicleActionMap.get(vehicle);
+
+            ArrayList<Integer> actionTimesList = new ArrayList<>();
+            for (Action action : actionList) {
+
+                // For every task in the actionList of the vehicle we take the actionTimes - pickUp and delivery
+                // and we add it to the list of actionTimesList of the vehicle
+                if (action.getActionType() == Action.ActionType.PICKUP) {
+                    Task task = action.getTask();
+
+                    ActionTimes actionTimes = taskActionTimesMap.get(task);
+                    actionTimesList.add(actionTimes.pickUpTime);
+                    actionTimesList.add(actionTimes.deliveryTime);
+                }
+            }
+
+            Set<Integer> actionTimesSet = new HashSet<>(actionTimesList);
+
+            // If the set created by the actionTimesList has the same size of the list
+            // it means that no value was repeated
+            returnValue = returnValue && actionTimesSet.size() == actionTimesList.size();
+        }
+
+        return returnValue;
+    }
+
+
     /**
      * constraint on the fact that, in every step of our vehicle,
      * the total weight of the carried tasks must be lower than the
@@ -135,6 +203,7 @@ public class Solution {
     public boolean timeConstraint(Task task){
 
         ActionTimes actionTimes = taskActionTimesMap.get(task);
+
 
         return actionTimes.pickUpTime < actionTimes.deliveryTime;
 

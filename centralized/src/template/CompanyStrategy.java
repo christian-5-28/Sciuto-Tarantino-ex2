@@ -35,10 +35,10 @@ public class CompanyStrategy {
      * is updated if the new solution chosen has a lower cost.
      * @param maxIter
      * @param probability
-     * @param minimaThreshold
+     * @param minimumThreshold
      * @return
      */
-    public Solution SLS(int maxIter, double probability, int minimaThreshold) {
+    public Solution SLS(int maxIter, double probability, int minimumThreshold) {
 
         //initializes a first solution
         Solution solution = initialSolution();
@@ -53,7 +53,7 @@ public class CompanyStrategy {
             List<Solution> neighbors = chooseNeighbors(oldSolution);
 
             //selects a new solution
-            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), minimaThreshold, i);
+            solution = localChoice(neighbors, probability, oldSolution, oldSolution.objectiveFunction(), minimumThreshold, i);
             System.out.println("solution cost: " + solution.objectiveFunction());
 
             //check for the update of the global best solution
