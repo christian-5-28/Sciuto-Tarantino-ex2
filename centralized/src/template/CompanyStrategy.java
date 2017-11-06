@@ -42,6 +42,7 @@ public class CompanyStrategy {
 
         //initializes a first solution
         Solution solution = initialSolution();
+
         Solution bestSolution = solution;
 
         for (int i = 0; i < maxIter; i++) {

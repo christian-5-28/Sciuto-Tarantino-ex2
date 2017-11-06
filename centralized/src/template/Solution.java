@@ -29,8 +29,8 @@ import java.util.*;
 
 public class Solution {
 
-    private TaskSet tasksDomain;
-    private List<Vehicle> vehiclesDomain;
+    private static TaskSet tasksDomain;
+    private static List<Vehicle> vehiclesDomain;
 
      private Map<Task, ActionTimes> taskActionTimesMap;
      private Map<Vehicle, List<Action>> vehicleActionMap;
