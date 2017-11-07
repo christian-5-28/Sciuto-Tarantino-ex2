@@ -15,7 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Christian on 03/11/2017.
+ * CentralizedCompany class:
+ * it implements the centralized behavior
  */
 public class CentralizedCompany implements CentralizedBehavior {
 
@@ -52,13 +53,18 @@ public class CentralizedCompany implements CentralizedBehavior {
 
     }
 
+    /**
+     * it uses the SLS method in order to obtain a best solution for all the task
+     */
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
 
         companyStrategy = new CompanyStrategy(tasks, vehicles);
         System.out.println("starting SLS");
-        bestSolution = companyStrategy.SLS(10000, 0.35, 20);
-        System.out.println("completed SLS");
+        long start = System.currentTimeMillis();
+        bestSolution = companyStrategy.SLS(10000, timeout_plan, 0.35, 50);
+        long end = System.currentTimeMillis();
+        System.out.println("completed SLS in " + (end - start)/1000 + "seconds");
 
         List<Plan> planList = new ArrayList<>();
 
@@ -69,6 +75,10 @@ public class CentralizedCompany implements CentralizedBehavior {
         return planList;
     }
 
+    /**
+     * it creates the plan for the vehicle by emulating its path using the actionList
+     * of the vehicle.
+     */
     private Plan createVehiclePlan(Vehicle vehicle, List<Action> actionList) {
 
         Plan plan = new Plan(vehicle.getCurrentCity());
@@ -115,27 +125,4 @@ public class CentralizedCompany implements CentralizedBehavior {
     }
 
 
-    private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
-        Topology.City current = vehicle.getCurrentCity();
-        Plan plan = new Plan(current);
-
-        for (Task task : tasks) {
-            // move: current city => pickup location
-            for (Topology.City city : current.pathTo(task.pickupCity)) {
-                plan.appendMove(city);
-            }
-
-            plan.appendPickup(task);
-
-            // move: pickup location => delivery location
-            for (Topology.City city : task.path()) {
-                plan.appendMove(city);
-            }
-
-            plan.appendDelivery(task);
-
-            // set current city
-            current = task.deliveryCity;
-        }
-        return plan;
-    }}
+}

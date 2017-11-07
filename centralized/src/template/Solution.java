@@ -91,12 +91,9 @@ public class Solution {
 
     // CONSTRAINTS //
 
-    //TODO: check and add to isValid()
-
     /**
-     * This constraint returns true iff one task is contained in only one vehicle actionList and returns false otherwise
-     * @param task
-     * @return
+     * This constraint returns true iff one task is contained in
+     * only one vehicle actionList and returns false otherwise
      */
     public boolean taskUnique(Task task) {
 
@@ -120,7 +117,6 @@ public class Solution {
         return oneVehicle;
     }
 
-    //TODO: check and add this constraint to isValid()
 
     /**
      * This function returns true if every vehicle do all its actions in different times
@@ -162,7 +158,7 @@ public class Solution {
     /**
      * constraint on the fact that, in every step of our vehicle,
      * the total weight of the carried tasks must be lower than the
-     * capacity of the vehicle
+     * capacity of the vehicle.
      * @param vehicle
      * @return
      */
@@ -216,9 +212,7 @@ public class Solution {
      */
     public boolean allTasksDeliveredConstraint() {
 
-        //TODO: controllare che esista il tempo di pick up e delivery
-
-        for (Task task : taskActionTimesMap.keySet()) {
+       for (Task task : taskActionTimesMap.keySet()) {
             if(!tasksDomain.contains(task)){
                 return false;
             }

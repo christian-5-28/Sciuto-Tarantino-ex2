@@ -28,9 +28,7 @@ public class CompanyStrategy {
     /**
      * Stochastic Local Search algorithm. Starting from an initial solution,
      * in each iteration it creates list of neighbors Solutions of the current Solution,
-     * then it finds the solution with the minimum cost among the neighbor solutions
-     * and with a probability p it selects this new solution, otherwise it keeps with
-     * the current solution (more details in the description of the "localChoice" method).
+     * then, from this list it selects a new solution (more details in the description of the "localChoice" method).
      * In each steps the global best solution (minimum cost found in this search)
      * is updated if the new solution chosen has a lower cost.
      * @param maxIter
@@ -38,7 +36,9 @@ public class CompanyStrategy {
      * @param minimumThreshold
      * @return
      */
-    public Solution SLS(int maxIter, double probability, int minimumThreshold) {
+    public Solution SLS(int maxIter, long timeoutPlan, double probability, int minimumThreshold) {
+
+        long start = System.currentTimeMillis();
 
         //initializes a first solution
         Solution solution = initialSolution();
@@ -47,6 +47,10 @@ public class CompanyStrategy {
 
         for (int i = 0; i < maxIter; i++) {
 
+            if(System.currentTimeMillis() - start > timeoutPlan - 10000){
+                return bestSolution;
+            }
+
             System.out.println("iteration: " + i);
             Solution oldSolution = new Solution(solution);
 
@@ -54,7 +58,7 @@ public class CompanyStrategy {
             List<Solution> neighbors = chooseNeighbors(oldSolution);
 
             //selects a new solution
-            solution = localChoice(neighbors, probability, oldSolution, minimaThreshold);
+            solution = localChoice(neighbors, probability, oldSolution, minimumThreshold);
             System.out.println("solution cost: " + solution.objectiveFunction());
 
             //check for the update of the global best solution
@@ -159,7 +163,7 @@ public class CompanyStrategy {
      * This method creates new Solution to be explored in the search of the SLS algorithm.
      * First, new Solution are created by changing one random task from a random vehicle to
      * all the other vehicle ( we obtain then a new solution for each vehicle different from
-     * the one selected. all the new Solution are added to a neighbor solution list.
+     * the one selected). All the new Solutions are added to a neighbor solution list.
      * Second, for the random vehicle selected, we change to order of two actions of its
      * actionList, we do this pair-wise for each couple of actions. A new solution is made
      * for each action changed. we add the new solution to the neighbor list.
@@ -195,8 +199,6 @@ public class CompanyStrategy {
         System.out.println("starting switch task");
         for (Vehicle vehicle : oldSolution.getVehiclesDomain()) {
 
-            // TODO: vedere se aggiungere come condizione dell'if il controllo della free capacity del vehicle
-            // TODO: a cui viene aggiunta la task rispetto alla task che gli stiamo dando
             if(vehicle.id() != randVehicle.id()){
                 neighbors.add(changingVehicle(oldSolution, randVehicle, vehicle, taskToSwitch));
             }
@@ -259,7 +261,7 @@ public class CompanyStrategy {
     /**
      * removes the selected task from the vehicle 1 and adds it in the vehicle 2. In order to make more
      * simple the way to get and remove the actions regarding the selected task, this method uses the taskActiontimes
-     * map that, for each task has a actionTime values that contains the pickUpTime value of the task
+     * map that, for each task has an actionTime value that contains the pickUpTime value of the task
      * (the index of the pickup action of that task in the actionList) and the deliveryTime of the task.
      * It adds the two actions randomly in the second vehicle (respecting the order of pickup and delivery), then
      * the updateTime method is called on the new solution and on the two vehicles.
@@ -366,10 +368,10 @@ public class CompanyStrategy {
      * Then it will select with a probability p this new solution, otherwise it will select the old solution.
      * If the value of the objective function is the same as the objective function value of the previous solution
      * (previous iteration of the SLS) then a counter is incremented and, when this counter is equal to a selected
-     * threshold, the method will choose a random Solution in the neighbor list. This last step is done
+     * minimumThreshold, the method will choose a random Solution in the neighbor list. This last step is done
      * in order to not be stuck in a local minimum and try to find new solutions.
      */
-    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, int minimaThreshold) {
+    private Solution localChoice(List<Solution> neighbors, double probability, Solution oldSolution, int minimumThreshold) {
 
         Solution bestSolution = oldSolution;
 
@@ -406,7 +408,7 @@ public class CompanyStrategy {
             solution in the neighbor list. This is done in order to avoid local
             minimum.
          */
-        if(equalCostCounter == minimaThreshold && !neighbors.isEmpty()){
+        if(equalCostCounter == minimumThreshold && !neighbors.isEmpty()){
             equalCostCounter = 0;
             int randIndex = new Random().nextInt(neighbors.size());
             solutionChosen = neighbors.get(randIndex);
@@ -416,6 +418,9 @@ public class CompanyStrategy {
         return solutionChosen;
     }
 
+    /**
+     *it chooses new solution only based on the probability. This method was created only for testing
+     */
     Solution localChoiceProbability(List<Solution> neighbors, double probability, Solution oldSolution){
 
         Solution bestSolution = oldSolution;
@@ -437,79 +442,5 @@ public class CompanyStrategy {
             return oldSolution;
 
     }
-
-
-    /**
-     * We create a first naive valid solution
-     * @return
-
-    private Solution naiveSolution() {
-
-    class LoadComparator implements Comparator<Vehicle> {
-
-    @Override
-    public int compare(Vehicle o1, Vehicle o2) {
-    if(o1.capacity() > o2.capacity())
-    return -1;
-
-    if(o1.capacity() < o2.capacity())
-    return 1;
-
-    return 0;
-    }
-    }
-
-    Solution solution = new Solution(tasksDomain, vehiclesDomain);
-
-    for (Vehicle vehicle : vehiclesDomain) {
-
-    solution.getVehicleTasksMap().put(vehicle, new ArrayList<>());
-    solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
-    }
-
-    ArrayList<Vehicle> vehicles = new ArrayList<>(vehiclesDomain);
-    ArrayList<Task> tasksToAdd = new ArrayList<>(tasksDomain);
-    Collections.sort(vehicles, new LoadComparator());
-
-    // The vehicles are ordered following an descending order of load capacity.
-    // We fill every vehicle in this order until the vehicle is full.
-    for (Vehicle vehicle : vehicles) {
-
-    if (tasksToAdd.isEmpty()) break;
-
-    int load = 0;
-
-    ArrayList<Task> vehicleTasks = new ArrayList<>();
-
-    for (Task task : tasksDomain) {
-
-    if(!tasksToAdd.contains(task))
-    continue;
-
-    if (task.weight <= vehicle.capacity() - load) {
-
-    vehicleTasks.add(task);
-    tasksToAdd.remove(task);
-
-    // Updating the task->Vehicle map
-    solution.getTaskVehicleMap().put(task, vehicle);
-
-    load += task.weight;
-    }
-    else {
-    break;
-    }
-    }
-
-    // Updating the vehicle->List<Task> map
-    solution.getVehicleTasksMap().put(vehicle, vehicleTasks);
-
-    // We call this method that create all the actions of the vehicle and update their maps
-    createActions(solution, vehicle, vehicleTasks);
-    }
-
-    return solution;
-
-    }*/
 
 }

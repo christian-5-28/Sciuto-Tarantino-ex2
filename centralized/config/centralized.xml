@@ -54,22 +54,22 @@
 				<set cost-per-km="5" />
 			</vehicle>
 
-            <!-- the fourth vehicle (yellow)
+            <!-- the fourth vehicle (yellow)-->
             <vehicle name="Vehicle 4">
                 <set color="#ffff00" />
                 <set home="Norwich" />
                 <set speed="90" />
                 <set capacity="30" />
                 <set cost-per-km="5" />
-            </vehicle>-->
-
+            </vehicle>
+			<!--
             <vehicle name="Vehicle 5">
-                <set color="#ffff00" />
+                <set color="#ff00ff" />
                 <set home="London" />
                 <set speed="90" />
                 <set capacity="30" />
                 <set cost-per-km="5" />
-            </vehicle>
+            </vehicle>-->
 			
 		</company>
 	</companies>
