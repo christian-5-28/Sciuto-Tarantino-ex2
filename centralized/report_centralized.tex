@@ -1,0 +1,80 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{textcomp}
+
+% Add other packages here %
+
+
+% Put your group number and names in the author field %
+\title{\bf Excercise 4\\ Implementing a centralized agent}
+\author{Group \textnumero{15} : Christian Sciuto, Lorenzo Tarantino}
+
+
+% N.B.: The report should not be longer than 3 pages %
+
+
+\begin{document}
+\maketitle
+
+\section{Solution Representation}
+
+\subsection{Variables}
+% Describe the variables used in your solution representation %
+\begin{enumerate}
+\item taskActionTimesMap: the key of the map is a task and the value is an object from the ActionTimes class that contains the pickUp and delivery times of that task (of course the task refers to only one vehicle, see below).
+\item vehicleActionMap: the key of the map is a vehicle and the value is an object from the Action class, that contains a task and an ActionType = $\{PICKUP, DELIVERY\}$
+\end{enumerate}
+
+\subsection{Constraints}
+% Describe the constraints in your solution representation %
+\begin{enumerate}
+\item loadConstraint(Vehicle vehicle): the total weight of the carried tasks must be lower than the capacity of the vehicle in every moment;
+\item timeConstraint(Task task): the time for the pickUp of a task has to be strictly lower than the delivery time of that task;
+\item allTasksDeliveredConstraint(): the number of tasks picked up and delivered has to be equal to all the existing tasks;
+\item taskUnique(Task task): one task has to be picked up and delivered by one and only one vehicle;
+\item actionsAtDifferentTimesConstraint(): every vehicle has to do its actions in different times.
+\end{enumerate}
+
+\subsection{Objective function}
+% Describe the function that you optimize %
+Our objective function computes the total cost of the solution as the sum of the costs per vehicle. The cost per vehicle is computed in the following way: ADD FORMULA FOR COST CITY->CITY * COST PER KM first we add to the total cost the cost from the current position of the vehicle to the city of the first action (that is a pickUp action). Then we loop on the actionList of the vehicle, and for every action we compute the cost from the city of that action to the city of the next one.
+
+\section{Stochastic optimization}
+
+\subsection{Initial solution}
+% Describe how you generate the initial solution %
+After having tried different methods of initial solutions (random assignment of the tasks, all the tasks to the vehicle with the biggest capacity...), we found that the best initial solution is to first give the tasks that are in the currentCity of one vehicle to that vehicle (until it is full) and then distribute all the remaining tasks one for each vehicle.
+
+\subsection{Generating neighbours}
+% Describe how you generate neighbors %
+First, new solutions from Solution class are created by changing one random task from a random vehicle to all the other vehicle (one new solution for each vehicle different from the one selected). All the new solutions are added to a neighbor solution list. Secondly, for the random vehicle selected, we change to order of two actions of its actionList, pair-wise for each couple of actions. A new solution is created for every couple of actions swapped. We add the new solutions to the neighbor list. Finally, every solution in the neighbors list is filtered and eliminated if it does not respect all the constraints.
+
+\subsection{Stochastic optimization algorithm}
+% Describe your stochastic optimization algorithm %
+Starting from an initial solution, for each iteration the algorithm creates a list of neighbors solutions of the current one, then it finds the minimum cost solution in the neighbors list and with a probability p it selects the new one, otherwise it keeps the current solution. In each steps the global best solution (the one with the minimum cost found in this search) is updated if the new solution chosen has a lower cost. We added a parameter minimumThreshold
+
+\section{Results}
+
+\subsection{Experiment 1: Model parameters}
+% if your model has parameters, perform an experiment and analyze the results for different parameter values %
+
+\subsubsection{Setting}
+% Describe the settings of your experiment: topology, task configuration, number of tasks, number of vehicles, etc. %
+% and the parameters you are analyzing %
+
+\subsubsection{Observations}
+% Describe the experimental results and the conclusions you inferred from these results %
+
+\subsection{Experiment 2: Different configurations}
+% Run simulations for different configurations of the environment (i.e. different tasks and number of vehicles) %
+
+\subsubsection{Setting}
+% Describe the settings of your experiment: topology, task configuration, number of tasks, number of vehicles, etc. %
+
+\subsubsection{Observations}
+% Describe the experimental results and the conclusions you inferred from these results %
+% Reflect on the fairness of the optimal plans. Observe that optimality requires some vehicles to do more work than others. %
+% How does the complexity of your algorithm depend on the number of vehicles and various sizes of the task set? %
+
+\end{document}

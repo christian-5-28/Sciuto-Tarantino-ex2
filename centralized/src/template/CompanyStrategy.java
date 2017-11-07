@@ -35,10 +35,10 @@ public class CompanyStrategy {
      * is updated if the new solution chosen has a lower cost.
      * @param maxIter
      * @param probability
-     * @param minimaThreshold
+     * @param minimumThreshold
      * @return
      */
-    public Solution SLS(int maxIter, double probability, int minimaThreshold) {
+    public Solution SLS(int maxIter, double probability, int minimumThreshold) {
 
         //initializes a first solution
         Solution solution = initialSolution();
