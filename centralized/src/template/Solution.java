@@ -22,6 +22,8 @@ import java.util.*;
  * 1) loadConstraint: Vehicle --> boolean. (Details below)
  * 2) timeCostraint: Task --> boolean. (details below)
  * 3) allTasksDeliveredConstraint: verifies that all the possible tasks are picked up and delivered (details below)
+ * 4) taskUnique: Task --> boolean. (details below)
+ * 5) actionsAtDifferentTimesConstraint: returns true if every vehicle do all its actions in different times.
  *
  * Objective function: return the total cost of the solution (details below).
  *

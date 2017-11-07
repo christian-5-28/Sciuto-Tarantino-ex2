@@ -84,7 +84,7 @@ public class CompanyStrategy {
         Solution solution = new Solution(tasksDomain, vehiclesDomain);
 
         for (Vehicle vehicle : vehiclesDomain) {
-            solution.getVehicleActionMap().put(vehicle, new ArrayList<>());
+            solution.getVehicleActionMap().put(vehicle, new ArrayList<Action>());
         }
 
 
