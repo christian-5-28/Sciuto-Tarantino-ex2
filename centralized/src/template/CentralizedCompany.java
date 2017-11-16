@@ -59,17 +59,39 @@ public class CentralizedCompany implements CentralizedBehavior {
     @Override
     public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
 
-        companyStrategy = new CompanyStrategy(tasks, vehicles);
-        System.out.println("starting SLS");
-        long start = System.currentTimeMillis();
-        bestSolution = companyStrategy.SLS(10000, timeout_plan, 0.35, 50);
-        long end = System.currentTimeMillis();
-        System.out.println("completed SLS in " + (end - start)/1000 + "seconds");
+        if(tasks.isEmpty()){
+            return createEmptyPlan(vehicles);
+        }
+
+        else{
+
+            companyStrategy = new CompanyStrategy(tasks, vehicles);
+            System.out.println("starting SLS");
+            long start = System.currentTimeMillis();
+            bestSolution = companyStrategy.SLS(10000, timeout_plan, 0.35, 50);
+            long end = System.currentTimeMillis();
+            System.out.println("completed SLS in " + (end - start)/1000 + "seconds");
+
+            List<Plan> planList = new ArrayList<>();
+
+            for (Vehicle vehicle : vehicles) {
+                planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
+            }
+
+            return planList;
+        }
+
+
+    }
+
+    private List<Plan> createEmptyPlan(List<Vehicle> vehicles) {
 
         List<Plan> planList = new ArrayList<>();
 
         for (Vehicle vehicle : vehicles) {
-            planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
+
+            planList.add(new Plan(vehicle.homeCity()));
+            
         }
 
         return planList;

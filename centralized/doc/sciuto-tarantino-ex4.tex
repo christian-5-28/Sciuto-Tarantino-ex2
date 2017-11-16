@@ -97,7 +97,7 @@ We run simulations with different probability parameter and different minimumThr
 \subsubsection{Setting}
 % Describe the settings of your experiment: topology, task configuration, number of tasks, number of vehicles, etc. %
 % and the parameters you are analyzing %
-Topology: England.xml; 20 tasks, 4 vehicles and 10000 iterations. We will use probability: [0.35, 5, 1] with fixed minimumThreshold = 50; then minimumThreshold: [50, 500] with probability = 0.35
+Topology: England.xml; 20 tasks, 4 vehicles and 10000 iterations. We will use probability: $\{0.35, 0.5, 1\}$ with fixed minimumThreshold = 50; then minimumThreshold: $\{50, 500\}$ with probability = 0.35
 
 \subsubsection{Observations}
 % Describe the experimental results and the conclusions you inferred from these results %
@@ -106,7 +106,7 @@ probability = 0.35 \textrightarrow finalCost = 10831.5; probability = 0.5\textri
 minimumThreshold = 50 \textrightarrow finalCost = 10831.5; minimumThreshold = 500 \textrightarrow finalCost = 13769.0
 \\
 \\
-We can conclude that, given our implementation o the 'localChoice' method, our solutions are more influenced by the minimum threshold parameter ( when we increase it, it is more likely to obtain worst solutions).
+We can conclude that, given our implementation of the 'localChoice' method, our solutions are more influenced by the minimum threshold parameter ( when we increase it, it is more likely to obtain worse solutions).
 
 \subsection{Experiment 2: Different configurations}
 % Run simulations for different configurations of the environment (i.e. different tasks and number of vehicles) %
@@ -148,7 +148,7 @@ The table below contains the values computed using the 'localChoice' method pres
 \normalsize
 
 \begin{enumerate}
-\item We obtain better results for each configutation with our localChoice implementation, this is because 'localChoice' method on the paper is more prone to be stuck in local minimum.
+\item We obtain better results for each configuration with our localChoice implementation, this is because 'localChoice' method on the paper is more prone to be stuck in local minimum.
 \item On the other hand, our 'localChoice' implementation makes the SLS slower compared to using the 'localChoice' method on the paper. This is because when we try to avoid a local minimum, we select a random solution from the neighbor.
 \item We can notice that, when we increase the number of tasks, our algorithm complexity increases (the computational time increases). This was expected because we create more solutions with the 'changingVehicle' and 'swapActions' methods. Also, if we increase the number of vehicles, then our computational time decreases, mostly because we have less tasks per vehicle.
 \end{enumerate}
