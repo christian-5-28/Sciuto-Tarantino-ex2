@@ -36,12 +36,12 @@ public class CompanyStrategy {
      * @param minimumThreshold
      * @return
      */
-    public Solution SLS(int maxIter, long timeoutPlan, double probability, int minimumThreshold) {
+    public Solution SLS(int maxIter, long timeoutPlan, double probability, int minimumThreshold, Solution initialSolution) {
 
         long start = System.currentTimeMillis();
 
         //initializes a first solution
-        Solution solution = initialSolution();
+        Solution solution = initialSolution;
 
         Solution bestSolution = solution;
 
@@ -79,7 +79,7 @@ public class CompanyStrategy {
      * they are splitted equally to each vehicle (always considering the weight of the task)
      * @return
      */
-    private Solution initialSolution(){
+    public Solution initialSolution(){
 
         Solution solution = new Solution(tasksDomain, vehiclesDomain);
 
@@ -312,6 +312,44 @@ public class CompanyStrategy {
         updateTimes(tempSolution, v2);
 
         return tempSolution;
+    }
+
+    public Solution addTask(Solution oldSolution, Task task){
+
+        Solution solution = new Solution(oldSolution);
+
+        solution.getTaskDomain().add(task);
+
+        for (Map.Entry<Vehicle, List<Action>> vehicleListEntry : solution.getVehicleActionMap().entrySet()) {
+
+            Vehicle vehicle = vehicleListEntry.getKey();
+            List<Action> actionList = vehicleListEntry.getValue();
+
+            List<Task> tasks = new ArrayList<>();
+            int totalWeight = 0;
+
+            for (Action action : actionList) {
+                if(!tasks.contains(action.task)){
+                    tasks.add(action.task);
+                    totalWeight += action.task.weight;
+                }
+            }
+
+            if(totalWeight + task.weight <= vehicle.capacity()){
+                Action pickUp = new Action(Action.ActionType.PICKUP, task);
+                Action delivery = new Action(Action.ActionType.DELIVERY, task);
+
+                actionList.add(pickUp);
+                actionList.add(delivery);
+
+                updateTimes(solution, vehicle);
+
+                return solution;
+            }
+
+        }
+
+        return null;
     }
 
     /**

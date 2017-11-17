@@ -31,11 +31,12 @@ import java.util.*;
 
 public class Solution {
 
-    private static TaskSet tasksDomain;
-    private static List<Vehicle> vehiclesDomain;
+    private TaskSet tasksDomain;
+    private List<Vehicle> vehiclesDomain;
 
-     private Map<Task, ActionTimes> taskActionTimesMap;
-     private Map<Vehicle, List<Action>> vehicleActionMap;
+    private Map<Task, ActionTimes> taskActionTimesMap;
+    private Map<Vehicle, List<Action>> vehicleActionMap;
+
 
 
     public Solution(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
@@ -55,6 +56,9 @@ public class Solution {
 
         this.vehicleActionMap = copyVehicleActions(oldSolution.vehicleActionMap);
         this.taskActionTimesMap = copyActionTimes(oldSolution.taskActionTimesMap);
+
+        this.tasksDomain = oldSolution.tasksDomain;
+        this.vehiclesDomain = oldSolution.vehiclesDomain;
 
     }
 
@@ -318,4 +322,7 @@ public class Solution {
         return vehicleActionMap;
     }
 
+    public TaskSet getTaskDomain() {
+        return tasksDomain;
+    }
 }

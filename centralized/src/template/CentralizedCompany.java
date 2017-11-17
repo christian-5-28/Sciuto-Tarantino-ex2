@@ -68,7 +68,7 @@ public class CentralizedCompany implements CentralizedBehavior {
             companyStrategy = new CompanyStrategy(tasks, vehicles);
             System.out.println("starting SLS");
             long start = System.currentTimeMillis();
-            bestSolution = companyStrategy.SLS(10000, timeout_plan, 0.35, 50);
+            bestSolution = companyStrategy.SLS(5000, timeout_plan, 0.35, 50, companyStrategy.initialSolution());
             long end = System.currentTimeMillis();
             System.out.println("completed SLS in " + (end - start)/1000 + "seconds");
 
