@@ -24,8 +24,23 @@ public class AuctionStrategy {
 
     //map for the tasks won by the other agents.
     private Map<Integer, List<Task>> agentsTasksMap;
-    //TODO: per ogni agente errore totale e errore su città (non è meglio errore su task? Meno complicato)
+    //TODO: per ogni agente errore totale e errore su città (non è meglio errore su task? Meno complicato. Sì, ma meno preciso
 
+    private Map<Integer, AgentStatus> agentStatusMap;
+
+    // This map contains for every agent the prediction of his bid
+    private Map<Integer, Double> agentPredictionMap;
+
+    private double currentMarginalCost;
+    //TODO: ad ogni turno aggiornarlo per non doverlo calcolare due volte
+
+    private double balance;
+    //TODO: aggiornare ogni volta che vinco una task
+
+    private double balanceThreshold;
+    //TODO: variabile che viene usata per avere una strategia aggressiva o meno
+
+    private boolean firstAuction = true;
 
     /**
      *
@@ -57,12 +72,15 @@ public class AuctionStrategy {
         for (Topology.City pickUpCity : topology.cities()) {
             for (Topology.City deliveryCity : topology.cities()) {
 
-                double prob = taskDistribution.probability(pickUpCity, deliveryCity);
+                if (!pickUpCity.equals(deliveryCity)) {
 
-                if(prob >= probabilityBound){
-                    int reward = taskDistribution.reward(pickUpCity, deliveryCity);
-                    int weight = taskDistribution.weight(pickUpCity, deliveryCity);
-                    taskProbabilityMap.put(new Task(id, pickUpCity, deliveryCity, reward, weight), prob);
+                    double prob = taskDistribution.probability(pickUpCity, deliveryCity);
+
+                    if(prob >= probabilityBound){
+                        int reward = taskDistribution.reward(pickUpCity, deliveryCity);
+                        int weight = taskDistribution.weight(pickUpCity, deliveryCity);
+                        taskProbabilityMap.put(new Task(id, pickUpCity, deliveryCity, reward, weight), prob);
+                    }
                 }
             }
         }
@@ -77,6 +95,7 @@ public class AuctionStrategy {
      * the task that it won, then a best solution considering also the current
      * task. After this, it returns the difference of the two planCosts.
      */
+    //TODO: perchè calcolare il marginal cost di quelle già vinte? Lo si fa già al turno prima, se poi si vince effetivamente la task si aggiorna il MC attuale (che diventa un attributo)
     public double presentMarginalCost(Task task, TaskSet presentTaskSet){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, agent.vehicles());
@@ -235,5 +254,160 @@ public class AuctionStrategy {
     }
 
     //TODO: creare metodi per fare gli update delle mappe / liste di questa classe.
+
+
+    /**
+     * Predicting the bids of every other agent.
+     * @param task
+     */
+    public void predictBids(Task task) {
+
+        for (Map.Entry<Integer, AgentStatus> agentStatusEntry : agentStatusMap.entrySet()) {
+
+            Integer enemy = agentStatusEntry.getKey();
+            AgentStatus enemyStatus = agentStatusEntry.getValue();
+
+            //TODO: non possiamo calcolare la strategia dell'avversario, non abbiamo i suoi veicoli
+
+            // Here we compute the prediction of the bid - marginal cost of an agent
+            double prediction = mCostPrediction(enemyStatus, task);
+
+            // We add this prediction to the map. We will use it later to compare our prediction with the actual bid
+            agentPredictionMap.put(enemy, prediction);
+
+        }
+
+    }
+
+    /**
+     * Marginal cost prediction for one agent.
+     * If the agent never bid before, we use our bid as prediction.
+     * If the agent bid at least once, we can face three different cases:
+     *
+     * 1) None of the cities of the task of the auction has a previous offer for that agent. We are going to use the
+     * average of his bids as prediction
+     *
+     * 2) One of the two cities has a previous offers: we use that as a prediction
+     *
+     * 3) Both cities have previous offers: we use the average of them to compute our prediction
+     * @param enemyStatus
+     * @param task
+     * @return
+     */
+    private double mCostPrediction(AgentStatus enemyStatus, Task task) {
+
+        double prediction = 0;
+        int div = 0;
+
+        // If the enemy never bid, the prediction will be equal to my offer
+        if (!enemyStatus.hasAlreadyBid()) {
+
+            // TODO: si salva da qualche parte l'offerta che voglio fare?
+            prediction = MYBID;
+            div = 1;
+        }
+
+        else {
+            Topology.City pickupCity = task.pickupCity;
+            Topology.City deliveryCity = task.deliveryCity;
+
+            Map<Topology.City, List<Double>> pickupCityBids = enemyStatus.getPickUpCitiesBids();
+            Map<Topology.City, List<Double>> deliveryCityBids = enemyStatus.getDeliveryCitiesBids();
+
+            // If there are old offers for that pickUp City, we use them to make our prediction
+            if (pickupCityBids.keySet().contains(pickupCity)) {
+                OptionalDouble average = pickupCityBids.get(pickupCity).stream().mapToDouble(pred -> pred).average();
+                if (average.isPresent()) {
+                    prediction += average.getAsDouble();
+                }
+                div += 1;
+            }
+
+            // If there are old offers for that delivery City, we use them to make our prediction
+            if (deliveryCityBids.keySet().contains(deliveryCity)) {
+                OptionalDouble average = deliveryCityBids.get(deliveryCity).stream().mapToDouble(pred -> pred).average();
+                if (average.isPresent()) {
+                    prediction += average.getAsDouble();
+                }
+                div += 1;
+            }
+
+            // This means that we didn't find any offer for those cities
+            // We have to use the mean of the agent bids
+            if (prediction == 0) {
+                prediction = enemyStatus.getAverageBid();
+                div = 1;
+            }
+        }
+
+        return prediction/div;
+
+    }
+
+
+    /**
+     * After the auction is completed, we have to update the agents' status.
+     * First we add the bids they made (if they made one).
+     * Secondly we compute our error we made with our prediction compared to the real offer.
+     * Third we add the task to the winner of the auction.
+     * @param lastTask
+     * @param lastOffers
+     * @param lastWinner
+     */
+    public void auctionCompleted(Task lastTask, Long[] lastOffers, int lastWinner) {
+
+        Topology.City pickUpCity = lastTask.pickupCity;
+        Topology.City deliveryCity = lastTask.deliveryCity;
+
+        for (int enemy = 0; enemy < lastOffers.length; enemy++) {
+
+            AgentStatus enemyStatus = agentStatusMap.get(enemy);
+
+            // If the enemy participated to the auction we update his bids in his status
+            if (lastOffers[enemy] != null) {
+
+                Map<Topology.City, List<Double>> pickUpCitiesBids = enemyStatus.getPickUpCitiesBids();
+                Map<Topology.City, List<Double>> deliveryCitiesBids = enemyStatus.getDeliveryCitiesBids();
+
+
+                updateOffers(pickUpCitiesBids, pickUpCity, lastOffers[enemy].doubleValue());
+                updateOffers(deliveryCitiesBids, deliveryCity, lastOffers[enemy].doubleValue());
+
+                // Here we compute the error we made and we add it to the errors of the status
+                double error  = Math.abs(agentPredictionMap.get(enemy) - lastOffers[enemy].doubleValue());
+                enemyStatus.getErrors().add(error);
+            }
+
+            if (enemy == lastWinner) {
+                enemyStatus.getTasksWon().add(lastTask);
+            }
+
+
+        }
+
+    }
+
+    /**
+     * Update the offers made by the agent
+     * @param previousBids
+     * @param city
+     * @param offer
+     */
+    public void updateOffers(Map<Topology.City, List<Double>> previousBids, Topology.City city, double offer) {
+
+        List<Double> cityBids = previousBids.get(city);
+
+        // If the enemy already made bids for that city we add the offer
+        if (cityBids != null) {
+            cityBids.add(offer);
+
+        }
+        // Otherwise, we create the entry with the first offer
+        else {
+            List<Double> offers = new ArrayList<>();
+            offers.add(offer);
+            previousBids.put(city, offers);
+        }
+    }
 
 }
