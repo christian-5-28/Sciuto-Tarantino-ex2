@@ -1,12 +1,9 @@
 package template;
 
-import logist.task.Task;
+import logist.task.TaskSet;
 import logist.topology.Topology.City;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by lorenzotara on 18/11/17.
@@ -21,15 +18,15 @@ public class AgentStatus {
     private Map<City, List<Double>> pickUpCitiesPredictions;
     private Map<City, List<Double>> deliveryCitiesPredictions;
 
-    private List<Task> tasksWon;
+    private TaskSet tasksWon;
     private double averageBid = 0;
     private List<Double> errors;
     private boolean alreadyBid = false;
 
-    public AgentStatus() {
+    public AgentStatus(TaskSet taskSet) {
         this.pickUpCitiesBids = new HashMap<>();
         this.deliveryCitiesBids = new HashMap<>();
-        this.tasksWon = new ArrayList<>();
+        this.tasksWon = taskSet;
         this.errors = new ArrayList<>();
 
     }
@@ -50,7 +47,7 @@ public class AgentStatus {
         return deliveryCitiesBids;
     }
 
-    public List<Task> getTasksWon() {
+    public TaskSet getTasksWon() {
         return tasksWon;
     }
 
@@ -64,5 +61,17 @@ public class AgentStatus {
 
     public boolean hasAlreadyBid() {
         return alreadyBid;
+    }
+
+    public double getAverageError() {
+
+        OptionalDouble averageError = errors.stream().mapToDouble(error -> error).average();
+
+        if (averageError.isPresent()) {
+            return averageError.getAsDouble();
+        }
+
+        return 0;
+
     }
 }

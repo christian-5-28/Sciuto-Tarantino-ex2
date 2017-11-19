@@ -2,6 +2,7 @@ package template;
 
 import logist.agent.Agent;
 import logist.simulation.Vehicle;
+import logist.simulation.VehicleImpl;
 import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.task.TaskSet;
@@ -22,6 +23,8 @@ public class AuctionStrategy {
     private Map<Task, Double> neededTasksMap;
     private Map<Task, Double> temporaryNeededTasksMap;
 
+    private int auctionNumber = 0;
+
     //map for the tasks won by the other agents.
     private Map<Integer, List<Task>> agentsTasksMap;
     //TODO: per ogni agente errore totale e errore su città (non è meglio errore su task? Meno complicato. Sì, ma meno preciso
@@ -29,7 +32,7 @@ public class AuctionStrategy {
     private Map<Integer, AgentStatus> agentStatusMap;
 
     // This map contains for every agent the prediction of his bid
-    private Map<Integer, Double> agentPredictionMap;
+    //private Map<Integer, Double> agentPredictionMap;
 
     private double currentMarginalCost;
     //TODO: ad ogni turno aggiornarlo per non doverlo calcolare due volte
@@ -96,6 +99,7 @@ public class AuctionStrategy {
      * task. After this, it returns the difference of the two planCosts.
      */
     //TODO: perchè calcolare il marginal cost di quelle già vinte? Lo si fa già al turno prima, se poi si vince effetivamente la task si aggiorna il MC attuale (che diventa un attributo)
+    // TODO: da cambiare utilizzando i veicoli
     public double presentMarginalCost(Task task, TaskSet presentTaskSet){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, agent.vehicles());
@@ -258,24 +262,28 @@ public class AuctionStrategy {
 
     /**
      * Predicting the bids of every other agent.
+     * Returns the minimum bid
      * @param task
      */
-    public void predictBids(Task task) {
+    public Double predictBids(Task task) {
 
-        for (Map.Entry<Integer, AgentStatus> agentStatusEntry : agentStatusMap.entrySet()) {
+        Double min = Double.POSITIVE_INFINITY;
 
-            Integer enemy = agentStatusEntry.getKey();
-            AgentStatus enemyStatus = agentStatusEntry.getValue();
-
-            //TODO: non possiamo calcolare la strategia dell'avversario, non abbiamo i suoi veicoli
+        // For every agent we predict the range of bid
+        for (AgentStatus enemyStatus : agentStatusMap.values()) {
 
             // Here we compute the prediction of the bid - marginal cost of an agent
-            double prediction = mCostPrediction(enemyStatus, task);
+            List<Double> range = mCostPrediction2(enemyStatus, task);
+            Double minRange = range.get(0);
 
-            // We add this prediction to the map. We will use it later to compare our prediction with the actual bid
-            agentPredictionMap.put(enemy, prediction);
+            // We save the id of the enemy that made the minimum bid
+            if (minRange < min) {
+                min = minRange;
+            }
 
         }
+
+        return min;
 
     }
 
@@ -303,7 +311,7 @@ public class AuctionStrategy {
         if (!enemyStatus.hasAlreadyBid()) {
 
             // TODO: si salva da qualche parte l'offerta che voglio fare?
-            prediction = MYBID;
+            /*prediction = MYBID;*/
             div = 1;
         }
 
@@ -348,42 +356,48 @@ public class AuctionStrategy {
     /**
      * Marginal cost prediction for one agent.
      * First we compute his offer using our strategy.
-     * Secondly we compute the errors we made for every past prediction.
-     * We return the prediction and a range = prediction +- error
+     * Secondly we compute the average of the errors we made for every past prediction in the cities of the task.
+     * Finally we return  a range = prediction +- averageError, where averageError is the averageError we do
+     * when we predict for that agent
      *
      * @param enemyStatus
      * @param task
      * @return
      */
-    private Double[] mCostPrediction2(AgentStatus enemyStatus, Task task) {
+    private List<Double> mCostPrediction2(AgentStatus enemyStatus, Task task) {
 
         // First we predict the marginal cost following our strategy
-        // TODO: pensare a come gestire lista invece di TaskSet
+
+        List<Vehicle> vehicles0 = createVehicles(agent.vehicles());
+        List<Vehicle> vehicles1 = createVehicles(agent.vehicles());
+        List<Vehicle> vehicles2 = createVehicles(agent.vehicles());
+
+        //TODO: use different strategies - we have to pass the vehicles
         double prediction = presentMarginalCost(task, enemyStatus.getTasksWon());
 
         Topology.City pickupCity = task.pickupCity;
         Topology.City deliveryCity = task.deliveryCity;
 
+        /*if (enemyStatus.getPickUpCitiesPredictions().get(pickupCity) == null) {
+            enemyStatus.getPickUpCitiesPredictions().put(pickupCity, new ArrayList<Double>());
+        }*/
+
+
+        // We take the predictions of the pickUp city
+        enemyStatus.getPickUpCitiesPredictions().computeIfAbsent(pickupCity, k -> new ArrayList<Double>());
         List<Double> pickupCityPredictions = enemyStatus.getPickUpCitiesPredictions().get(pickupCity);
-        List<Double> deliveryCityPredictions= enemyStatus.getDeliveryCitiesPredictions().get(deliveryCity);
+
+
+        // We take the predictions of the delivery city
+        enemyStatus.getDeliveryCitiesPredictions().computeIfAbsent(deliveryCity, k -> new ArrayList<Double>());
+        List<Double> deliveryCityPredictions = enemyStatus.getDeliveryCitiesPredictions().get(deliveryCity);
 
         double error = 0;
 
-        // If the enemy never bid, the prediction will be equal to my offer
-        // Useless if
-        if (!enemyStatus.hasAlreadyBid()) {
-
-            Double[] range = new Double[2];
-            range[0] = prediction - error;
-            range[1] = prediction + error;
-            return range;
-        }
-
-        else {
+        if (enemyStatus.hasAlreadyBid()) {
 
             Map<Topology.City, List<Double>> pickUpCitiesBids = enemyStatus.getPickUpCitiesBids();
             Map<Topology.City, List<Double>> deliveryCityBids = enemyStatus.getDeliveryCitiesBids();
-
 
             int numberOfBids = 0;
 
@@ -392,45 +406,59 @@ public class AuctionStrategy {
 
                 List<Double> puBids = pickUpCitiesBids.get(pickupCity);
 
-
                 // For every auction, we compute the abs error and then we take the average of them
-                for (int i = 0; i < puBids.size(); i++) {
+                computeError(puBids, error, numberOfBids, pickupCityPredictions);
 
-                    // It can happen that an agent makes a null offer
-                    if (puBids.get(i) != null) {
-                        error += Math.abs(puBids.get(i) - pickupCityPredictions.get(i));
-                        numberOfBids++;
-                    }
-                }
             }
 
             // If there are old offers for that delivery City, we use their average to make our prediction
             if (deliveryCityBids.keySet().contains(deliveryCity)) {
 
                 List<Double> dBids = deliveryCityBids.get(deliveryCity);
-                for (int i = 0; i < dBids.size(); i++) {
 
-                    // It can happen that an agent makes a null offer
-                    if (dBids.get(i) != null) {
-                        error += Math.abs(dBids.get(i) - deliveryCityPredictions.get(i));
-                        numberOfBids++;
-                    }
-                }
+                // For every auction, we compute the abs error and then we take the average of them
+                computeError(dBids, error, numberOfBids, deliveryCityPredictions);
             }
 
             // error is the average error that we did in our predictions
             error /= numberOfBids;
+
+            // Our final prediction will be equal to the sum of our prediction from the strategy
+            // and the average of the errors on those two cities
+            prediction += error;
         }
 
         // Adding our predictions to the enemy status
         pickupCityPredictions.add(prediction);
         deliveryCityPredictions.add(prediction);
-        Double[] range = new Double[2];
-        range[0] = prediction - error;
-        range[1] = prediction + error;
+
+        double agentError = enemyStatus.getAverageError();
+
+        ArrayList<Double> range = new ArrayList<>(2);
+        range.add(prediction - agentError);
+        range.add(prediction + agentError);
 
         return range;
 
+    }
+
+    /**
+     * This method compute the sum of the errors between the real offers and our predictions
+     * @param bids
+     * @param error
+     * @param numberOfBids
+     * @param cityPredictions
+     */
+    private void computeError(List<Double> bids, double error, int numberOfBids, List<Double> cityPredictions) {
+
+        for (int i = 0; i < bids.size(); i++) {
+
+            // It can happen that an agent makes a null offer
+            if (bids.get(i) != null) {
+                error += bids.get(i) - cityPredictions.get(i);
+                numberOfBids++;
+            }
+        }
     }
 
     /**
@@ -449,28 +477,55 @@ public class AuctionStrategy {
 
         for (int enemy = 0; enemy < lastOffers.length; enemy++) {
 
+            // If it's our agent we break
+            if (enemy == agent.id()) {
+                if (lastWinner == agent.id()) {
+                    //TODO: bisogna aggiungere qua la task vinta?
+                    //TODO: bisogna updatare qua le task importanti?
+                    //TODO: update bilancio
+                    balance += lastOffers[enemy];
+
+                    updateNeededTasks();
+                }
+                break;
+            }
+
+            if (firstAuction) {
+                //TODO: controllare che nel taskset non ci sia già la task vinta
+                agentStatusMap.put(enemy, new AgentStatus(agent.getTasks()));
+            }
+
             AgentStatus enemyStatus = agentStatusMap.get(enemy);
 
-            // If the enemy participated to the auction we update his bids in his status
+            Map<Topology.City, List<Double>> pickUpCitiesBids = enemyStatus.getPickUpCitiesBids();
+            Map<Topology.City, List<Double>> deliveryCitiesBids = enemyStatus.getDeliveryCitiesBids();
+
+            updateOffers(pickUpCitiesBids, pickUpCity, lastOffers[enemy]);
+            updateOffers(deliveryCitiesBids, deliveryCity, lastOffers[enemy]);
+
+            // Here we compute the error we made and we add it to the errors of the status
+            double error;
+
+            // It can happen that the offer of the enemy is null - he didn't participate at the auction
             if (lastOffers[enemy] != null) {
 
-                Map<Topology.City, List<Double>> pickUpCitiesBids = enemyStatus.getPickUpCitiesBids();
-                Map<Topology.City, List<Double>> deliveryCitiesBids = enemyStatus.getDeliveryCitiesBids();
-
-
-                updateOffers(pickUpCitiesBids, pickUpCity, lastOffers[enemy].doubleValue());
-                updateOffers(deliveryCitiesBids, deliveryCity, lastOffers[enemy].doubleValue());
-
-                // Here we compute the error we made and we add it to the errors of the status
-                double error  = Math.abs(agentPredictionMap.get(enemy) - lastOffers[enemy].doubleValue());
-                enemyStatus.getErrors().add(error);
+                // We take our last prediction and we subtract his last offer
+                error = Math.abs(pickUpCitiesBids.get(pickUpCity).get(pickUpCitiesBids.size() - 1) - lastOffers[enemy].doubleValue());
             }
+
+            // In the case he didn't participate at the auction our error is equal to our prediction
+            else {
+                error = pickUpCitiesBids.get(pickUpCity).get(pickUpCitiesBids.size() - 1);
+            }
+            enemyStatus.getErrors().add(error);
 
             if (enemy == lastWinner) {
                 enemyStatus.getTasksWon().add(lastTask);
             }
+        }
 
-
+        if (firstAuction) {
+            firstAuction = false;
         }
 
     }
@@ -481,7 +536,7 @@ public class AuctionStrategy {
      * @param city
      * @param offer
      */
-    public void updateOffers(Map<Topology.City, List<Double>> previousBids, Topology.City city, double offer) {
+    private void updateOffers(Map<Topology.City, List<Double>> previousBids, Topology.City city, double offer) {
 
         List<Double> cityBids = previousBids.get(city);
 
@@ -498,4 +553,107 @@ public class AuctionStrategy {
         }
     }
 
+    /**
+     * Method that create the vehicles for a SLS of an enemy
+     * @param agentVehicles
+     */
+    private List<Vehicle> createVehicles(List<Vehicle> agentVehicles) {
+
+        List<Vehicle> enemyVehicles = new ArrayList<>();
+
+        for (Integer i = 0; i < agentVehicles.size(); i++) {
+
+            Vehicle agentVehicle = agentVehicles.get(i);
+
+            int capacity = computeCapacity(agentVehicle.capacity());
+
+            Topology.City home = computeHome();
+
+            Vehicle vehicle = (new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home, (long) agentVehicle.speed(), agentVehicle.color())).getInfo();
+
+            enemyVehicles.add(vehicle);
+        }
+
+        return enemyVehicles;
+    }
+
+    /**
+     * Select a random home of a vehicle
+     * @return
+     */
+    private Topology.City computeHome() {
+
+        List<Topology.City> cities = topology.cities();
+
+        int random = new Random().nextInt() * (cities.size() - 1);
+
+        return cities.get(random);
+
+    }
+
+    /**
+     * Compute the capacity of a new vehicle: it's between 0.8 and 1.2 the original capacity
+     * @param capacity
+     * @return
+     */
+    private int computeCapacity(int capacity) {
+
+        double random = new Random().nextDouble();
+
+        return (int) (0.4 * random + 0.8) * capacity;
+
+    }
+
+    private double makeBid(Task task) {
+
+        double offer = presentMarginalCost(task, agent.getTasks());
+
+        if (balance > balanceThreshold) {
+
+            //TODO: raccattare da qualche parte il costPerKM
+            double costBound = task.pathLength();
+
+            offer = futureMarginalCost(task, offer, costBound);
+        }
+
+
+        double minBid = predictBids(task);
+
+        // If it's one of the first auctions we are bidding very low in order to get the tasks
+        if (auctionNumber < 3) {
+            auctionNumber++;
+
+            if (minBid < offer) {
+                return minBid * 0.5;
+            }
+            else {
+                return offer * 0.5;
+            }
+        }
+
+        auctionNumber++;
+
+        //TODO: rivedere - 0.95 * minBid potrebbe essere più piccolo della mia bid
+        if (offer < minBid) {
+            offer = Math.max(0.95 * minBid, offer);
+        }
+
+        //TODO: il contains funziona qui?
+        // If my initial offer is greater than minBid means that we are going to lose the auction
+        // For this reason we are going to decrease our offer, but only if we really need the task
+        if (offer >= minBid && neededTasksMap.keySet().contains(task)) {
+
+            Double rangeOfDecrease = neededTasksMap.get(task);
+
+            // TODO: what if 0.95 * minBid < initialOffer - rangeOfDecrease ?? Riguardare
+            // If my initial offer minus the range of decrease is lower than the minimum bid it means that
+            // I can beat the minimum bid
+            if (offer - rangeOfDecrease < minBid) {
+                offer = Math.max(0.95 * minBid, offer - rangeOfDecrease);
+            }
+
+        }
+
+        return offer;
+    }
 }
