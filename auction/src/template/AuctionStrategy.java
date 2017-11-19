@@ -191,6 +191,7 @@ public class AuctionStrategy {
             Task task = taskDoubleEntry.getKey();
             double marginalCost = taskDoubleEntry.getValue();
 
+            //TODO: cambiare, usare 500, non 300 o 200
             temporaryNeededTasksMap.put(task, updatedMarginalCost - marginalCost);
         }
     }
@@ -271,6 +272,8 @@ public class AuctionStrategy {
 
         // For every agent we predict the range of bid
         for (AgentStatus enemyStatus : agentStatusMap.values()) {
+
+            //TODO: controllare che non sia il mio agente
 
             // Here we compute the prediction of the bid - marginal cost of an agent
             List<Double> range = mCostPrediction2(enemyStatus, task);
@@ -487,7 +490,7 @@ public class AuctionStrategy {
 
                     updateNeededTasks();
                 }
-                break;
+                continue;
             }
 
             if (firstAuction) {
@@ -619,6 +622,7 @@ public class AuctionStrategy {
 
         double minBid = predictBids(task);
 
+        //TODO: aggiungi else
         // If it's one of the first auctions we are bidding very low in order to get the tasks
         if (auctionNumber < 3) {
             auctionNumber++;
@@ -633,12 +637,12 @@ public class AuctionStrategy {
 
         auctionNumber++;
 
-        //TODO: rivedere - 0.95 * minBid potrebbe essere più piccolo della mia bid
+        //TODO: se la task è needed offro magari 80%
         if (offer < minBid) {
             offer = Math.max(0.95 * minBid, offer);
         }
 
-        //TODO: il contains funziona qui?
+        //TODO: il contains funziona qui? No, aggiungere funzione che sfanculi il contains
         // If my initial offer is greater than minBid means that we are going to lose the auction
         // For this reason we are going to decrease our offer, but only if we really need the task
         if (offer >= minBid && neededTasksMap.keySet().contains(task)) {
