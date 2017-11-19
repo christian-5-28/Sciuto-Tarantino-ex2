@@ -346,6 +346,94 @@ public class AuctionStrategy {
 
 
     /**
+     * Marginal cost prediction for one agent.
+     * First we compute his offer using our strategy.
+     * Secondly we compute the errors we made for every past prediction.
+     * We return the prediction and a range = prediction +- error
+     *
+     * @param enemyStatus
+     * @param task
+     * @return
+     */
+    private Double[] mCostPrediction2(AgentStatus enemyStatus, Task task) {
+
+        // First we predict the marginal cost following our strategy
+        // TODO: pensare a come gestire lista invece di TaskSet
+        double prediction = presentMarginalCost(task, enemyStatus.getTasksWon());
+
+        Topology.City pickupCity = task.pickupCity;
+        Topology.City deliveryCity = task.deliveryCity;
+
+        List<Double> pickupCityPredictions = enemyStatus.getPickUpCitiesPredictions().get(pickupCity);
+        List<Double> deliveryCityPredictions= enemyStatus.getDeliveryCitiesPredictions().get(deliveryCity);
+
+        double error = 0;
+
+        // If the enemy never bid, the prediction will be equal to my offer
+        // Useless if
+        if (!enemyStatus.hasAlreadyBid()) {
+
+            Double[] range = new Double[2];
+            range[0] = prediction - error;
+            range[1] = prediction + error;
+            return range;
+        }
+
+        else {
+
+            Map<Topology.City, List<Double>> pickUpCitiesBids = enemyStatus.getPickUpCitiesBids();
+            Map<Topology.City, List<Double>> deliveryCityBids = enemyStatus.getDeliveryCitiesBids();
+
+
+            int numberOfBids = 0;
+
+            // If there are old offers for that pickUp City, we use their average to make our prediction
+            if (pickUpCitiesBids.keySet().contains(pickupCity)) {
+
+                List<Double> puBids = pickUpCitiesBids.get(pickupCity);
+
+
+                // For every auction, we compute the abs error and then we take the average of them
+                for (int i = 0; i < puBids.size(); i++) {
+
+                    // It can happen that an agent makes a null offer
+                    if (puBids.get(i) != null) {
+                        error += Math.abs(puBids.get(i) - pickupCityPredictions.get(i));
+                        numberOfBids++;
+                    }
+                }
+            }
+
+            // If there are old offers for that delivery City, we use their average to make our prediction
+            if (deliveryCityBids.keySet().contains(deliveryCity)) {
+
+                List<Double> dBids = deliveryCityBids.get(deliveryCity);
+                for (int i = 0; i < dBids.size(); i++) {
+
+                    // It can happen that an agent makes a null offer
+                    if (dBids.get(i) != null) {
+                        error += Math.abs(dBids.get(i) - deliveryCityPredictions.get(i));
+                        numberOfBids++;
+                    }
+                }
+            }
+
+            // error is the average error that we did in our predictions
+            error /= numberOfBids;
+        }
+
+        // Adding our predictions to the enemy status
+        pickupCityPredictions.add(prediction);
+        deliveryCityPredictions.add(prediction);
+        Double[] range = new Double[2];
+        range[0] = prediction - error;
+        range[1] = prediction + error;
+
+        return range;
+
+    }
+
+    /**
      * After the auction is completed, we have to update the agents' status.
      * First we add the bids they made (if they made one).
      * Secondly we compute our error we made with our prediction compared to the real offer.
