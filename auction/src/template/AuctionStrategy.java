@@ -25,10 +25,6 @@ public class AuctionStrategy {
 
     private int auctionNumber = 0;
 
-    //map for the tasks won by the other agents.
-    private Map<Integer, List<Task>> agentsTasksMap;
-    //TODO: per ogni agente errore totale e errore su città (non è meglio errore su task? Meno complicato. Sì, ma meno preciso
-
     private Map<Integer, AgentStatus> agentStatusMap;
 
     // This map contains for every agent the prediction of his bid
@@ -39,7 +35,7 @@ public class AuctionStrategy {
     //TODO: ad ogni turno aggiornarlo per non doverlo calcolare due volte
 
     private double balance;
-    //TODO: aggiornare ogni volta che vinco una task
+    //TODO: aggiornare ogni volta che vinco una task - serve costo per km
 
     private double balanceThreshold;
     //TODO: variabile che viene usata per avere una strategia aggressiva o meno
@@ -57,6 +53,7 @@ public class AuctionStrategy {
         this.timeoutBid = timeoutBid;
         this.topology = topology;
 
+        agentStatusMap = new HashMap<>();
         taskProbabilityMap = new HashMap<>();
         neededTasksMap = new HashMap<>();
         temporaryNeededTasksMap = new HashMap<>();
@@ -185,7 +182,7 @@ public class AuctionStrategy {
     /**
      * creates a temporary map of all the futureTask that
      * were taken into account for evaluating the weightedMarginalCost.
-     * The values of the map are the ifference between the presentMarginalCost
+     * The values of the map are the difference between the presentMarginalCost
      * and the futureMarginalCost.
      */
     private void createTemporaryNeededTasks(Map<Task, Double> marginalCostFutureTasks, double updatedMarginalCost) {
@@ -199,8 +196,6 @@ public class AuctionStrategy {
             temporaryNeededTasksMap.put(task, updatedMarginalCost - marginalCost);
         }
     }
-
-    //TODO: da chiamare quando ti viene detto che hai vinto il task
 
     /**
      * nelle due mappe di neededTask i task avranno sempre l'ID che ho creato io, dunque puoi usare contains.
@@ -262,9 +257,6 @@ public class AuctionStrategy {
         return 0.;
     }
 
-    //TODO: creare metodi per fare gli update delle mappe / liste di questa classe.
-
-
     /**
      * Predicting the bids of every other agent.
      * Returns the minimum bid
@@ -277,7 +269,7 @@ public class AuctionStrategy {
         // For every agent we predict the range of bid
         for (AgentStatus enemyStatus : agentStatusMap.values()) {
 
-            //TODO: controllare che non sia il mio agente
+            //TODO: controllare che non sia il mio agente - dovrebbe essere ok
 
             // Here we compute the prediction of the bid - marginal cost of an agent
             List<Double> range = mCostPrediction2(enemyStatus, task);
@@ -294,7 +286,7 @@ public class AuctionStrategy {
 
     }
 
-    /**
+/*    *//**
      * Marginal cost prediction for one agent.
      * If the agent never bid before, we use our bid as prediction.
      * If the agent bid at least once, we can face three different cases:
@@ -308,7 +300,7 @@ public class AuctionStrategy {
      * @param enemyStatus
      * @param task
      * @return
-     */
+     *//*
     private double mCostPrediction(AgentStatus enemyStatus, Task task) {
 
         double prediction = 0;
@@ -318,7 +310,7 @@ public class AuctionStrategy {
         if (!enemyStatus.hasAlreadyBid()) {
 
             // TODO: si salva da qualche parte l'offerta che voglio fare?
-            /*prediction = MYBID;*/
+            *//*prediction = MYBID;*//*
             div = 1;
         }
 
@@ -357,7 +349,7 @@ public class AuctionStrategy {
 
         return prediction/div;
 
-    }
+    }*/
 
 
     /**
@@ -380,7 +372,6 @@ public class AuctionStrategy {
         List<Vehicle> vehicles4 = createVehicles(agent.vehicles(), 4);
         List<Vehicle> vehicles5 = createVehicles(agent.vehicles(), 5);
 
-        //TODO: use different strategies - we have to pass the vehicles
         double prediction2 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles2);
         double prediction3 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles3);
         double prediction4 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles4);
@@ -474,6 +465,8 @@ public class AuctionStrategy {
         }
     }
 
+
+    //TODO: chiamare a auction completed
     /**
      * After the auction is completed, we have to update the agents' status.
      * First we add the bids they made (if they made one).
@@ -615,8 +608,6 @@ public class AuctionStrategy {
      */
     private int computeCapacity(int capacity, int ratio) {
 
-        double random = new Random().nextDouble();
-
         return ratio * capacity;
 
     }
@@ -652,7 +643,11 @@ public class AuctionStrategy {
 
         //TODO: se la task è needed offro magari 80%
         if (offer < minBid) {
-            offer = Math.max(0.95 * minBid, offer);
+            //TODO: contains sbagliato
+            if (!neededTasksMap.keySet().contains(task)) {
+                offer = Math.max(0.95 * minBid, offer);
+            }
+            else offer = Math.max(0.80 * minBid, offer);
         }
 
         //TODO: il contains funziona qui? No, aggiungere funzione che sfanculi il contains
