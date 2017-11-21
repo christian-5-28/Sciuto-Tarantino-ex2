@@ -122,9 +122,8 @@ public class AuctionStrategy {
                                                              100, presentCompanyStrategy.initialSolution()));
         }
 
-        TaskSet tempTaskSet = presentTaskSet;
-        tempTaskSet.add(task);
-        CompanyStrategy tempCompanyStrategy = new CompanyStrategy(tempTaskSet, vehicles);
+        presentTaskSet.add(task);
+        CompanyStrategy tempCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
 
         Solution temporary = tempCompanyStrategy.addTask(currentBestSolutionMap.get(agentID), task);
         temporaryBestSolutionMap.put(agentID, tempCompanyStrategy.SLS(5000, timeoutBid, 0.35, 100, temporary));
