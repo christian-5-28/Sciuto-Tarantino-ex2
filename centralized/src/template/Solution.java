@@ -325,4 +325,23 @@ public class Solution {
     public TaskSet getTaskDomain() {
         return tasksDomain;
     }
+
+    /**
+     * returns the vehicle that has to pickup and deliver the
+     * specific task.
+     */
+    public Vehicle getVehicle(Task task){
+        int taskIndex = taskActionTimesMap.get(task).pickUpTime;
+
+        for (Map.Entry<Vehicle, List<Action>> vehicleListEntry : vehicleActionMap.entrySet()) {
+            Vehicle vehicle = vehicleListEntry.getKey();
+            List<Action> actionList = vehicleListEntry.getValue();
+
+            if(task.id == actionList.get(taskIndex).getTask().id){
+                return vehicle;
+            }
+        }
+
+        return null;
+    }
 }
