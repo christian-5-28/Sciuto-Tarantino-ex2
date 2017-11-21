@@ -34,7 +34,8 @@ public class AuctionStrategy {
     // This map contains for every agent the prediction of his bid
     //private Map<Integer, Double> agentPredictionMap;
 
-    private double currentMarginalCost;
+    private Solution currentBestSolution;
+    private Solution temporaryBestSolution;
     //TODO: ad ogni turno aggiornarlo per non doverlo calcolare due volte
 
     private double balance;
@@ -98,21 +99,23 @@ public class AuctionStrategy {
      * the task that it won, then a best solution considering also the current
      * task. After this, it returns the difference of the two planCosts.
      */
-    //TODO: perchè calcolare il marginal cost di quelle già vinte? Lo si fa già al turno prima, se poi si vince effetivamente la task si aggiorna il MC attuale (che diventa un attributo)
-    // TODO: da cambiare utilizzando i veicoli
-    public double presentMarginalCost(Task task, TaskSet presentTaskSet){
+    //TODO: se return negativo, scartare task
+    public double presentMarginalCost(Task task, TaskSet presentTaskSet, List<Vehicle> vehicles){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, agent.vehicles());
-        Solution bestSolution = presentCompanyStrategy.SLS(5000, timeoutBid, 0.35, 100, presentCompanyStrategy.initialSolution());
+        if(currentBestSolution == null){
+            currentBestSolution = presentCompanyStrategy.SLS(5000, timeoutBid,0.35,
+                                                             100, presentCompanyStrategy.initialSolution());
+        }
 
         TaskSet tempTaskSet = presentTaskSet;
         tempTaskSet.add(task);
-        CompanyStrategy tempCompanyStrategy = new CompanyStrategy(tempTaskSet, agent.vehicles());
+        CompanyStrategy tempCompanyStrategy = new CompanyStrategy(tempTaskSet, vehicles);
 
-        Solution tempBestSolution = tempCompanyStrategy.addTask(bestSolution, task);
-        tempBestSolution = tempCompanyStrategy.SLS(5000, timeoutBid, 0.35, 100, tempBestSolution);
+        temporaryBestSolution = tempCompanyStrategy.addTask(currentBestSolution, task);
+        temporaryBestSolution = tempCompanyStrategy.SLS(5000, timeoutBid, 0.35, 100, temporaryBestSolution);
 
-        return bestSolution.objectiveFunction() - tempBestSolution.objectiveFunction();
+        return temporaryBestSolution.objectiveFunction() - currentBestSolution.objectiveFunction();
     }
 
     /**
@@ -138,7 +141,7 @@ public class AuctionStrategy {
             taskSet.add(futureTask);
 
             // here we evaluate the futureMarginalCost of the current task
-            double futureMarginalCost = presentMarginalCost(task, taskSet);
+            double futureMarginalCost = presentMarginalCost(task, taskSet, agent.vehicles());
 
             // the future marginal costs higher than the costBound are discarded
             if(futureMarginalCost < costBound){
@@ -376,7 +379,7 @@ public class AuctionStrategy {
         List<Vehicle> vehicles2 = createVehicles(agent.vehicles());
 
         //TODO: use different strategies - we have to pass the vehicles
-        double prediction = presentMarginalCost(task, enemyStatus.getTasksWon());
+        double prediction = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles0);
 
         Topology.City pickupCity = task.pickupCity;
         Topology.City deliveryCity = task.deliveryCity;
@@ -609,7 +612,7 @@ public class AuctionStrategy {
 
     private double makeBid(Task task) {
 
-        double offer = presentMarginalCost(task, agent.getTasks());
+        double offer = presentMarginalCost(task, agent.getTasks(), agent.vehicles());
 
         if (balance > balanceThreshold) {
 
