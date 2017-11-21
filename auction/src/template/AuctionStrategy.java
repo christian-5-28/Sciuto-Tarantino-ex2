@@ -543,6 +543,7 @@ public class AuctionStrategy {
                     balance += lastOffers[enemy];
 
                     updateNeededTasks();
+                    //TODO: update altre mappe
                 }
                 continue;
             }
@@ -672,7 +673,7 @@ public class AuctionStrategy {
         if (balance > balanceThreshold) {
 
             //TODO: raccattare da qualche parte il costPerKM --> RISOLTO
-            double costBound = task.pathLength()*vehicleChosen.costPerKm();
+            double costBound = task.pathLength() * vehicleChosen.costPerKm();
 
             offer = futureMarginalCost(task, offer, costBound, 5);
         }
@@ -694,12 +695,16 @@ public class AuctionStrategy {
 
         auctionNumber++;
 
+        // TODO: rivedere se neededTask.get è negativo
+
         //TODO: se la task è needed offro magari 80% --> RISOLTO
         if (offer < minBid) {
             //TODO: contains sbagliato --> RISOLTO
             if (!taskSetSameCities(neededTasksMap.keySet(), task)) {
                 offer = Math.max(0.95 * minBid, offer);
             }
+
+            //TODO: controlla di avere abbastanza soldi
             else offer = Math.max(0.80 * minBid, offer);
         }
 

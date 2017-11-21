@@ -48,7 +48,7 @@ public class AgentStatus {
     }
 
     public TaskSet getTasksWon() {
-        return tasksWon;
+        return TaskSet.copyOf(tasksWon);
     }
 
     public List<Double> getErrors() {
