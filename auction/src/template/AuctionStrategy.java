@@ -375,12 +375,18 @@ public class AuctionStrategy {
 
         // First we predict the marginal cost following our strategy
 
-        List<Vehicle> vehicles0 = createVehicles(agent.vehicles());
-        List<Vehicle> vehicles1 = createVehicles(agent.vehicles());
-        List<Vehicle> vehicles2 = createVehicles(agent.vehicles());
+        List<Vehicle> vehicles2 = createVehicles(agent.vehicles(), 2);
+        List<Vehicle> vehicles3 = createVehicles(agent.vehicles(), 3);
+        List<Vehicle> vehicles4 = createVehicles(agent.vehicles(), 4);
+        List<Vehicle> vehicles5 = createVehicles(agent.vehicles(), 5);
 
         //TODO: use different strategies - we have to pass the vehicles
-        double prediction = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles0);
+        double prediction2 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles2);
+        double prediction3 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles3);
+        double prediction4 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles4);
+        double prediction5 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles5);
+
+        double prediction = (prediction2 + prediction3 + prediction4 + prediction5)/4;
 
         Topology.City pickupCity = task.pickupCity;
         Topology.City deliveryCity = task.deliveryCity;
@@ -524,6 +530,7 @@ public class AuctionStrategy {
             else {
                 error = pickUpCitiesBids.get(pickUpCity).get(pickUpCitiesBids.size() - 1);
             }
+
             enemyStatus.getErrors().add(error);
 
             if (enemy == lastWinner) {
@@ -564,15 +571,17 @@ public class AuctionStrategy {
      * Method that create the vehicles for a SLS of an enemy
      * @param agentVehicles
      */
-    private List<Vehicle> createVehicles(List<Vehicle> agentVehicles) {
+    private List<Vehicle> createVehicles(List<Vehicle> agentVehicles, int numberOfVehicles) {
 
         List<Vehicle> enemyVehicles = new ArrayList<>();
 
-        for (Integer i = 0; i < agentVehicles.size(); i++) {
+        for (Integer i = 0; i < numberOfVehicles; i++) {
 
-            Vehicle agentVehicle = agentVehicles.get(i);
+            int randIndex = new Random().nextInt(agentVehicles.size());
 
-            int capacity = computeCapacity(agentVehicle.capacity());
+            Vehicle agentVehicle = agentVehicles.get(randIndex);
+
+            int capacity = computeCapacity(agentVehicle.capacity(), agentVehicles.size()/numberOfVehicles);
 
             Topology.City home = computeHome();
 
@@ -601,13 +610,14 @@ public class AuctionStrategy {
     /**
      * Compute the capacity of a new vehicle: it's between 0.8 and 1.2 the original capacity
      * @param capacity
+     * @param ratio
      * @return
      */
-    private int computeCapacity(int capacity) {
+    private int computeCapacity(int capacity, int ratio) {
 
         double random = new Random().nextDouble();
 
-        return (int) (0.4 * random + 0.8) * capacity;
+        return ratio * capacity;
 
     }
 
@@ -626,7 +636,6 @@ public class AuctionStrategy {
 
         double minBid = predictBids(task);
 
-        //TODO: aggiungi else
         // If it's one of the first auctions we are bidding very low in order to get the tasks
         if (auctionNumber < 3) {
             auctionNumber++;
@@ -653,7 +662,6 @@ public class AuctionStrategy {
 
             Double rangeOfDecrease = neededTasksMap.get(task);
 
-            // TODO: what if 0.95 * minBid < initialOffer - rangeOfDecrease ?? Riguardare
             // If my initial offer minus the range of decrease is lower than the minimum bid it means that
             // I can beat the minimum bid
             if (offer - rangeOfDecrease < minBid) {
