@@ -100,6 +100,7 @@ public class AuctionStrategy {
      * task. After this, it returns the difference of the two planCosts.
      */
     //TODO: se return negativo, scartare task
+    //TODO: le solution vanno salvate solo nelle variabili di classe quando si tratta del mio agente.
     public double presentMarginalCost(Task task, TaskSet presentTaskSet, List<Vehicle> vehicles){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, agent.vehicles());
