@@ -34,6 +34,11 @@ public class AuctionTemplate implements AuctionBehavior {
 	private City currentCity;
 	private long timeout_bid;
 
+	private AuctionStrategy auctionStrategy;
+	private CompanyStrategy companyStrategy;
+	private Solution bestSolution;
+	private long timeout_plan;
+
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
 			Agent agent) {
@@ -44,13 +49,14 @@ public class AuctionTemplate implements AuctionBehavior {
 		this.vehicle = agent.vehicles().get(0);
 		this.currentCity = vehicle.homeCity();
 
+
 		long seed = -9019554669489983951L * currentCity.hashCode() * agent.id();
 		this.random = new Random(seed);
 
 		// this code is used to get the timeouts
 		LogistSettings ls = null;
 		try {
-			ls = Parsers.parseSettings("config/settings_default.xml");
+			ls = Parsers.parseSettings("config/settings_auction.xml");
 		}
 		catch (Exception exc) {
 			System.out.println("There was a problem loading the configuration file.");
@@ -58,19 +64,39 @@ public class AuctionTemplate implements AuctionBehavior {
 
 		// the plan method cannot execute more than timeout_bid milliseconds
 		timeout_bid = ls.get(LogistSettings.TimeoutKey.BID);
+		System.out.println("BID:");
+		System.out.println(timeout_bid);
+		// the plan method cannot execute more than timeout_plan milliseconds
+		timeout_plan = ls.get(LogistSettings.TimeoutKey.PLAN);
+		System.out.println("PLAN:");
+		System.out.println(timeout_plan);
+
+		this.auctionStrategy = new AuctionStrategy(distribution, timeout_bid, this.agent, this.topology);
+
+
+		System.out.println("Setup..");
+
 	}
 
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
-		if (winner == agent.id()) {
+
+		auctionStrategy.auctionCompleted(previous, bids, winner);
+
+		/*if (winner == agent.id()) {
 			currentCity = previous.deliveryCity;
-		}
+		}*/
 	}
 	
 	@Override
 	public Long askPrice(Task task) {
 
-		if (vehicle.capacity() < task.weight)
+		System.out.println("Ask price...");
+
+
+		return (long)auctionStrategy.makeBid(task);
+
+		/*if (vehicle.capacity() < task.weight)
 			return null;
 
 		long distanceTask = task.pickupCity.distanceUnitsTo(task.deliveryCity);
@@ -82,23 +108,114 @@ public class AuctionTemplate implements AuctionBehavior {
 		double ratio = 1.0 + (random.nextDouble() * 0.05 * task.id);
 		double bid = ratio * marginalCost;
 
-		return (long) Math.round(bid);
+		return (long) Math.round(bid);*/
 	}
 
 	@Override
 	public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
-		
+
+		if(tasks.isEmpty()){
+			return createEmptyPlan(vehicles);
+		}
+
+		else {
+
+			companyStrategy = new CompanyStrategy(tasks, vehicles);
+			System.out.println("starting SLS");
+			long start = System.currentTimeMillis();
+			bestSolution = companyStrategy.SLS(5000, timeout_bid, 0.35, 50, companyStrategy.initialSolution());
+			long end = System.currentTimeMillis();
+			System.out.println("completed SLS in " + (end - start) / 1000 + "seconds");
+
+			List<Plan> planList = new ArrayList<>();
+
+			for (Vehicle vehicle : vehicles) {
+				planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
+			}
+
+			System.out.println("Plan...");
+
+			return planList;
+
+
+		}
+
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
 
-		Plan planVehicle1 = naivePlan(vehicle, tasks);
+		/*Plan planVehicle1 = naivePlan(vehicle, tasks);
 
 		List<Plan> plans = new ArrayList<Plan>();
 		plans.add(planVehicle1);
 		while (plans.size() < vehicles.size())
 			plans.add(Plan.EMPTY);
 
-		return plans;
+		return plans;*/
 	}
+
+	private List<Plan> createEmptyPlan(List<Vehicle> vehicles) {
+
+		List<Plan> planList = new ArrayList<>();
+
+		for (Vehicle vehicle : vehicles) {
+
+			planList.add(new Plan(vehicle.homeCity()));
+
+		}
+
+		return planList;
+	}
+
+	/**
+	 * it creates the plan for the vehicle by emulating its path using the actionList
+	 * of the vehicle.
+	 */
+	private Plan createVehiclePlan(Vehicle vehicle, List<Action> actionList) {
+
+		Plan plan = new Plan(vehicle.getCurrentCity());
+
+		Topology.City currentCity = vehicle.getCurrentCity();
+
+		for (Action action : actionList) {
+
+			Task task = action.getTask();
+
+			switch (action.getActionType()){
+				case PICKUP:
+					if(action.getTask().pickupCity.equals(currentCity)){
+						plan.appendPickup(task);
+					}
+					else{
+						for (Topology.City city : currentCity.pathTo(task.pickupCity)) {
+							plan.appendMove(city);
+						}
+						plan.appendPickup(task);
+						currentCity = task.pickupCity;
+					}
+					break;
+				case DELIVERY:
+					if(action.getTask().deliveryCity.equals(currentCity)){
+						plan.appendDelivery(task);
+					}
+					else{
+						for (Topology.City city : currentCity.pathTo(task.deliveryCity)) {
+							plan.appendMove(city);
+						}
+						plan.appendDelivery(task);
+						currentCity = task.deliveryCity;
+					}
+					break;
+				default:
+					break;
+
+			}
+
+		}
+
+		return plan;
+	}
+
+
+
 
 	private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
 		City current = vehicle.getCurrentCity();

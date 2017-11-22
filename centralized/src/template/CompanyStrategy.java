@@ -320,33 +320,57 @@ public class CompanyStrategy {
 
         solution.getTaskDomain().add(task);
 
-        for (Map.Entry<Vehicle, List<Action>> vehicleListEntry : solution.getVehicleActionMap().entrySet()) {
+        if (!solution.getVehicleActionMap().isEmpty()) {
 
-            Vehicle vehicle = vehicleListEntry.getKey();
-            List<Action> actionList = vehicleListEntry.getValue();
+            for (Map.Entry<Vehicle, List<Action>> vehicleListEntry : solution.getVehicleActionMap().entrySet()) {
 
-            List<Task> tasks = new ArrayList<>();
-            int totalWeight = 0;
+                Vehicle vehicle = vehicleListEntry.getKey();
+                List<Action> actionList = vehicleListEntry.getValue();
 
-            for (Action action : actionList) {
-                if(!tasks.contains(action.task)){
-                    tasks.add(action.task);
-                    totalWeight += action.task.weight;
+                List<Task> tasks = new ArrayList<>();
+                int totalWeight = 0;
+
+                for (Action action : actionList) {
+                    if(!tasks.contains(action.task)){
+                        tasks.add(action.task);
+                        totalWeight += action.task.weight;
+                    }
                 }
+
+                if(totalWeight + task.weight <= vehicle.capacity()){
+                    Action pickUp = new Action(Action.ActionType.PICKUP, task);
+                    Action delivery = new Action(Action.ActionType.DELIVERY, task);
+
+                    actionList.add(pickUp);
+                    actionList.add(delivery);
+
+                    updateTimes(solution, vehicle);
+
+                    return solution;
+                }
+
             }
+        }
 
-            if(totalWeight + task.weight <= vehicle.capacity()){
-                Action pickUp = new Action(Action.ActionType.PICKUP, task);
-                Action delivery = new Action(Action.ActionType.DELIVERY, task);
+        else {
 
-                actionList.add(pickUp);
-                actionList.add(delivery);
+            Vehicle vehicle = solution.getVehiclesDomain().get(0);
 
-                updateTimes(solution, vehicle);
 
-                return solution;
-            }
+            ArrayList<Action> actionList = new ArrayList<>();
 
+            Action pickUp = new Action(Action.ActionType.PICKUP, task);
+            Action delivery = new Action(Action.ActionType.DELIVERY, task);
+
+            actionList.add(pickUp);
+            actionList.add(delivery);
+
+            solution.getVehicleActionMap().put(vehicle, actionList);
+
+            //TODO: quando updateTimes viene chiamato fa una nullPointer: tempSolution.getTaskActionTimesMap() a riga 399 è vuota
+            updateTimes(solution, vehicle);
+
+            return solution;
         }
 
         return null;

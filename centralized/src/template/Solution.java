@@ -273,7 +273,7 @@ public class Solution {
 
         List<Action> vehicleActions = vehicleActionMap.get(vehicle);
 
-        if(!vehicleActions.isEmpty()){
+        if(vehicleActions != null && !vehicleActions.isEmpty() ){
 
             // cost initialized with the cost to go to the first pickup city from homeCity of the vehicle
             double cost = vehicle.getCurrentCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();

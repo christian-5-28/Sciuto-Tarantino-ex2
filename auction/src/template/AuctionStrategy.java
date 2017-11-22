@@ -33,10 +33,8 @@ public class AuctionStrategy {
 
     private Map<Integer, Solution> currentBestSolutionMap;
     private Map<Integer, Solution> temporaryBestSolutionMap;
-    //TODO: ad ogni turno aggiornarlo per non doverlo calcolare due volte
 
     private double balance;
-    //TODO: aggiornare ogni volta che vinco una task - serve costo per km
 
     private double balanceThreshold;
     //TODO: variabile che viene usata per avere una strategia aggressiva o meno
@@ -111,16 +109,24 @@ public class AuctionStrategy {
      * the task that it won, then a best solution considering also the current
      * task. After this, it returns the difference of the two planCosts.
      */
-    //TODO: se return negativo, scartare task
-    //TODO: le solution vanno salvate solo nelle variabili di classe quando si tratta del mio agente. --> RISOLTO
-    //TODO: crea metodo per ricercare task nella Solution, per sapere a quale veicolo è stato assegnato --> RISOLTO
     public double presentMarginalCost(Task task, TaskSet presentTaskSet, List<Vehicle> vehicles, int agentID){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
+
+
         if(!currentBestSolutionMap.keySet().contains(agentID)){
-            currentBestSolutionMap.put(agentID, presentCompanyStrategy.SLS(5000, timeoutBid,0.35,
-                                                             100, presentCompanyStrategy.initialSolution()));
+
+            if (!presentTaskSet.isEmpty()) {
+
+                currentBestSolutionMap.put(agentID, presentCompanyStrategy.SLS(5000, timeoutBid,0.35,
+                        100, presentCompanyStrategy.initialSolution()));
+            }
+
+            else {
+                currentBestSolutionMap.put(agentID, new Solution(presentTaskSet, vehicles));
+            }
         }
+
 
         presentTaskSet.add(task);
         CompanyStrategy tempCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
@@ -137,11 +143,13 @@ public class AuctionStrategy {
     public double futureMarginalCost(Task task, double presentMarginalCost, double costBound, int futureTasks){
 
         /*
-            TODO: si può inserire intervallo futuro, con questo intervallo 'n' --> RISOLTO
             considero solo i primi 'n' task con probabilità più alta.
          */
 
         Map<Task, Double> marginalCostFutureTasks = new HashMap<>();
+
+        //TODO: stupid function for futureTasks
+        futureTasks = Math.max(futureTasks - auctionNumber/2, 5);
 
         /*
          for each task that we have created, we evaluate the marginCost
@@ -156,8 +164,10 @@ public class AuctionStrategy {
             // here we evaluate the futureMarginalCost of the current task
             double futureMarginalCost = presentMarginalCost(task, taskSet, agent.vehicles(), agent.id());
 
+            // TODO: controllare che sia giusto mettere qui il check sul marginal cost negativo
+            // TODO: non dovrebbe essere future marginal cost < present marginal cost ???
             // the future marginal costs higher than the costBound are discarded
-            if(futureMarginalCost < costBound){
+            if (futureMarginalCost > 0 && futureMarginalCost < costBound) {
                 marginalCostFutureTasks.put(futureTask, futureMarginalCost);
             }
 
@@ -199,7 +209,6 @@ public class AuctionStrategy {
     /**
      * returns the first 'numberOfTask' tasks with highest probability
      */
-    //TODO: numberOfTask deve essere dipendente dal numero del turno dell'asta
     private Set<Task> getTasksByProbability(int numberOfTask){
 
         Set<Task> tasks = new HashSet<>();
@@ -223,7 +232,6 @@ public class AuctionStrategy {
             Task task = taskDoubleEntry.getKey();
             double marginalCost = taskDoubleEntry.getValue();
 
-            //TODO: cambiare, usare 500, non 300 o 200 --> RISOLTO
             temporaryNeededTasksMap.put(task, updatedMarginalCost - marginalCost);
         }
     }
@@ -303,8 +311,6 @@ public class AuctionStrategy {
             AgentStatus enemyStatus = agentStatusEntry.getValue();
             int agentID = agentStatusEntry.getKey();
 
-            //TODO: controllare che non sia il mio agente - dovrebbe essere ok
-
             // Here we compute the prediction of the bid - marginal cost of an agent
             List<Double> range = mCostPrediction2(enemyStatus, agentID, task);
             Double minRange = range.get(0);
@@ -315,22 +321,6 @@ public class AuctionStrategy {
             }
 
         }
-
-        /*
-        for (AgentStatus enemyStatus : agentStatusMap.values()) {
-
-            //TODO: controllare che non sia il mio agente - dovrebbe essere ok
-
-            // Here we compute the prediction of the bid - marginal cost of an agent
-            List<Double> range = mCostPrediction2(enemyStatus, task);
-            Double minRange = range.get(0);
-
-            // We save the id of the enemy that made the minimum bid
-            if (minRange < min) {
-                min = minRange;
-            }
-
-        }*/
 
         return min;
 
@@ -359,7 +349,6 @@ public class AuctionStrategy {
         // If the enemy never bid, the prediction will be equal to my offer
         if (!enemyStatus.hasAlreadyBid()) {
 
-            // TODO: si salva da qualche parte l'offerta che voglio fare?
             *//*prediction = MYBID;*//*
             div = 1;
         }
@@ -537,10 +526,7 @@ public class AuctionStrategy {
             if (enemy == agent.id()) {
                 if (lastWinner == agent.id()) {
                     //TODO: bisogna aggiungere qua la task vinta?
-                    //TODO: bisogna updatare qua le task importanti?
-                    //TODO: update bilancio
                     balance += lastOffers[enemy];
-
                     updateNeededTasks();
                     //TODO: update altre mappe
                 }
@@ -663,7 +649,7 @@ public class AuctionStrategy {
 
     }
 
-    private double makeBid(Task task) {
+    public double makeBid(Task task) {
 
         double offer = presentMarginalCost(task, agent.getTasks(), agent.vehicles(), agent.id());
 
@@ -671,7 +657,6 @@ public class AuctionStrategy {
 
         if (balance > balanceThreshold) {
 
-            //TODO: raccattare da qualche parte il costPerKM --> RISOLTO
             double costBound = task.pathLength() * vehicleChosen.costPerKm();
 
             offer = futureMarginalCost(task, offer, costBound, 5);
@@ -694,20 +679,20 @@ public class AuctionStrategy {
 
         auctionNumber++;
 
-        // TODO: rivedere se neededTask.get è negativo
-
-        //TODO: se la task è needed offro magari 80% --> RISOLTO
         if (offer < minBid) {
-            //TODO: contains sbagliato --> RISOLTO
+
             if (!taskSetSameCities(neededTasksMap.keySet(), task)) {
-                offer = Math.max(0.95 * minBid, offer);
+                offer = Math.max(0.90 * minBid, offer);
             }
 
-            //TODO: controlla di avere abbastanza soldi
-            else offer = Math.max(0.80 * minBid, offer);
+            else {
+                // Here we check if I can offer the 80% of the min bid, controlling that we don't lose too much money
+                double minOffer = Math.max(0.80 * minBid, offer - neededTasksMap.get(task));
+                // offer = Math.max(0.80 * minBid, offer);
+                offer = Math.max(minOffer, offer);
+            }
         }
 
-        //TODO: il contains funziona qui? No, aggiungere funzione che sfanculi il contains --> RISOLTO
         // If my initial offer is greater than minBid means that we are going to lose the auction
         // For this reason we are going to decrease our offer, but only if we really need the task
         if (offer >= minBid && taskSetSameCities(neededTasksMap.keySet(), task)) {
