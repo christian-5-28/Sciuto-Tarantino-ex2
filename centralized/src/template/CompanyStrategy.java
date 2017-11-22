@@ -15,12 +15,12 @@ import java.util.*;
  */
 public class CompanyStrategy {
 
-    private TaskSet tasksDomain;
+    private Set<Task> tasksDomain;
     private List<Vehicle> vehiclesDomain;
     private int equalCostCounter = 0;
 
 
-    public CompanyStrategy(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
+    public CompanyStrategy(Set<Task> tasksDomain, List<Vehicle> vehiclesDomain) {
         this.tasksDomain = tasksDomain;
         this.vehiclesDomain = vehiclesDomain;
     }
@@ -344,6 +344,8 @@ public class CompanyStrategy {
                     actionList.add(pickUp);
                     actionList.add(delivery);
 
+                    solution.getTaskActionTimesMap().put(task, new ActionTimes(actionList.indexOf(pickUp), actionList.indexOf(delivery)));
+
                     updateTimes(solution, vehicle);
 
                     return solution;
@@ -356,7 +358,6 @@ public class CompanyStrategy {
 
             Vehicle vehicle = solution.getVehiclesDomain().get(0);
 
-
             ArrayList<Action> actionList = new ArrayList<>();
 
             Action pickUp = new Action(Action.ActionType.PICKUP, task);
@@ -367,8 +368,7 @@ public class CompanyStrategy {
 
             solution.getVehicleActionMap().put(vehicle, actionList);
 
-            //TODO: quando updateTimes viene chiamato fa una nullPointer: tempSolution.getTaskActionTimesMap() a riga 399 è vuota
-            updateTimes(solution, vehicle);
+            solution.getTaskActionTimesMap().put(task, new ActionTimes(actionList.indexOf(pickUp), actionList.indexOf(delivery)));
 
             return solution;
         }

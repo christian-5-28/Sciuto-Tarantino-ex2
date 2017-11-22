@@ -31,7 +31,7 @@ import java.util.*;
 
 public class Solution {
 
-    private TaskSet tasksDomain;
+    private Set<Task> tasksDomain;
     private List<Vehicle> vehiclesDomain;
 
     private Map<Task, ActionTimes> taskActionTimesMap;
@@ -39,13 +39,30 @@ public class Solution {
 
 
 
-    public Solution(TaskSet tasksDomain, List<Vehicle> vehiclesDomain) {
+    public Solution(Set<Task> tasksDomain, List<Vehicle> vehiclesDomain) {
 
-        this.tasksDomain = tasksDomain;
+        this.tasksDomain = new HashSet<>();
+
+        for (Task task : tasksDomain) {
+            this.tasksDomain.add(task);
+        }
+
+        //this.tasksDomain = tasksDomain;
         this.vehiclesDomain = vehiclesDomain;
 
         taskActionTimesMap = new HashMap<>();
         vehicleActionMap = new HashMap<>();
+
+        initializeMaps();
+    }
+
+    private void initializeMaps() {
+
+        for (Vehicle vehicle : vehiclesDomain) {
+
+            vehicleActionMap.put(vehicle, new ArrayList<>());
+        }
+
     }
 
     /**
@@ -206,6 +223,10 @@ public class Solution {
 
         ActionTimes actionTimes = taskActionTimesMap.get(task);
 
+        if(actionTimes == null){
+            int i = 0;
+        }
+
 
         return actionTimes.pickUpTime < actionTimes.deliveryTime;
 
@@ -322,7 +343,7 @@ public class Solution {
         return vehicleActionMap;
     }
 
-    public TaskSet getTaskDomain() {
+    public Set<Task> getTaskDomain() {
         return tasksDomain;
     }
 
@@ -337,7 +358,7 @@ public class Solution {
             Vehicle vehicle = vehicleListEntry.getKey();
             List<Action> actionList = vehicleListEntry.getValue();
 
-            if(task.id == actionList.get(taskIndex).getTask().id){
+            if(taskIndex < actionList.size() && task.id == actionList.get(taskIndex).getTask().id){
                 return vehicle;
             }
         }

@@ -109,7 +109,7 @@ public class AuctionStrategy {
      * the task that it won, then a best solution considering also the current
      * task. After this, it returns the difference of the two planCosts.
      */
-    public double presentMarginalCost(Task task, TaskSet presentTaskSet, List<Vehicle> vehicles, int agentID){
+    public double presentMarginalCost(Task task, Set<Task> presentTaskSet, List<Vehicle> vehicles, int agentID){
 
         CompanyStrategy presentCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
 
@@ -118,7 +118,7 @@ public class AuctionStrategy {
 
             if (!presentTaskSet.isEmpty()) {
 
-                currentBestSolutionMap.put(agentID, presentCompanyStrategy.SLS(5000, timeoutBid,0.35,
+                currentBestSolutionMap.put(agentID, presentCompanyStrategy.SLS(500, timeoutBid,0.35,
                         100, presentCompanyStrategy.initialSolution()));
             }
 
@@ -131,8 +131,9 @@ public class AuctionStrategy {
         presentTaskSet.add(task);
         CompanyStrategy tempCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
 
+
         Solution temporary = tempCompanyStrategy.addTask(currentBestSolutionMap.get(agentID), task);
-        temporaryBestSolutionMap.put(agentID, tempCompanyStrategy.SLS(5000, timeoutBid, 0.35, 100, temporary));
+        temporaryBestSolutionMap.put(agentID, tempCompanyStrategy.SLS(500, timeoutBid, 0.35, 100, temporary));
 
         return temporaryBestSolutionMap.get(agentID).objectiveFunction() - currentBestSolutionMap.get(agentID).objectiveFunction();
     }
@@ -158,7 +159,10 @@ public class AuctionStrategy {
          */
         for (Task futureTask : getTasksByProbability(futureTasks)) {
 
-            TaskSet taskSet = agent.getTasks();
+            Set<Task> taskSet = new HashSet<>();
+            for (Task task1 : agent.getTasks()) {
+                taskSet.add(task1);
+            }
             taskSet.add(futureTask);
 
             // here we evaluate the futureMarginalCost of the current task
@@ -520,6 +524,9 @@ public class AuctionStrategy {
         Topology.City pickUpCity = lastTask.pickupCity;
         Topology.City deliveryCity = lastTask.deliveryCity;
 
+        // update the currentBestSolution map for the last winner
+        updateMaps(lastWinner);
+
         for (int enemy = 0; enemy < lastOffers.length; enemy++) {
 
             // If it's our agent we break
@@ -528,14 +535,13 @@ public class AuctionStrategy {
                     //TODO: bisogna aggiungere qua la task vinta?
                     balance += lastOffers[enemy];
                     updateNeededTasks();
-                    //TODO: update altre mappe
                 }
                 continue;
             }
 
             if (firstAuction) {
                 //TODO: controllare che nel taskset non ci sia già la task vinta
-                agentStatusMap.put(enemy, new AgentStatus(agent.getTasks()));
+                agentStatusMap.put(enemy, new AgentStatus(TaskSet.copyOf(agent.getTasks())));
             }
 
             AgentStatus enemyStatus = agentStatusMap.get(enemy);
@@ -572,6 +578,11 @@ public class AuctionStrategy {
             firstAuction = false;
         }
 
+    }
+
+    private void updateMaps(int agentID) {
+
+        currentBestSolutionMap.put(agentID, temporaryBestSolutionMap.get(agentID));
     }
 
     /**
@@ -651,7 +662,7 @@ public class AuctionStrategy {
 
     public double makeBid(Task task) {
 
-        double offer = presentMarginalCost(task, agent.getTasks(), agent.vehicles(), agent.id());
+        double offer = presentMarginalCost(task, TaskSet.copyOf(agent.getTasks()), agent.vehicles(), agent.id());
 
         Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(task);
 
@@ -679,15 +690,17 @@ public class AuctionStrategy {
 
         auctionNumber++;
 
+        Task matchTask = taskSetSameCities(neededTasksMap.keySet(), task);
         if (offer < minBid) {
 
-            if (!taskSetSameCities(neededTasksMap.keySet(), task)) {
+            // if the task is not in the neededTasks Map
+            if (matchTask == null) {
                 offer = Math.max(0.90 * minBid, offer);
             }
 
             else {
                 // Here we check if I can offer the 80% of the min bid, controlling that we don't lose too much money
-                double minOffer = Math.max(0.80 * minBid, offer - neededTasksMap.get(task));
+                double minOffer = Math.max(0.80 * minBid, offer - neededTasksMap.get(matchTask));
                 // offer = Math.max(0.80 * minBid, offer);
                 offer = Math.max(minOffer, offer);
             }
@@ -695,9 +708,9 @@ public class AuctionStrategy {
 
         // If my initial offer is greater than minBid means that we are going to lose the auction
         // For this reason we are going to decrease our offer, but only if we really need the task
-        if (offer >= minBid && taskSetSameCities(neededTasksMap.keySet(), task)) {
+        if (offer >= minBid && matchTask != null) {
 
-            Double rangeOfDecrease = neededTasksMap.get(task);
+            Double rangeOfDecrease = neededTasksMap.get(matchTask);
 
             // If my initial offer minus the range of decrease is lower than the minimum bid it means that
             // I can beat the minimum bid
@@ -717,13 +730,13 @@ public class AuctionStrategy {
         return task1.pickupCity.equals(task2.pickupCity) && task1.deliveryCity.equals(task2.deliveryCity);
     }
 
-    private boolean taskSetSameCities(Set<Task> taskSet, Task task){
+    private Task taskSetSameCities(Set<Task> taskSet, Task task){
 
         for (Task task1 : taskSet) {
-            if (!sameCities(task1, task))
-                return false;
+            if (sameCities(task1, task))
+                return task1;
         }
 
-        return true;
+        return null;
     }
 }
