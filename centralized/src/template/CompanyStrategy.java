@@ -51,7 +51,7 @@ public class CompanyStrategy {
                 return bestSolution;
             }
 
-            System.out.println("iteration: " + i);
+            // System.out.println("iteration: " + i);
             Solution oldSolution = new Solution(solution);
 
             //creates the neighbors solutions
@@ -59,7 +59,7 @@ public class CompanyStrategy {
 
             //selects a new solution
             solution = localChoice(neighbors, probability, oldSolution, minimumThreshold);
-            System.out.println("solution cost: " + solution.objectiveFunction());
+            // System.out.println("solution cost: " + solution.objectiveFunction());
 
             //check for the update of the global best solution
             if(solution.objectiveFunction() < bestSolution.objectiveFunction())

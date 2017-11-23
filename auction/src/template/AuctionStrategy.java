@@ -622,16 +622,42 @@ public class AuctionStrategy {
 
             Vehicle agentVehicle = agentVehicles.get(randIndex);
 
+            //TODO: problema di current tasks -> RISOLTO
+            TaskSet emptyTaskSet = agentVehicle.getCurrentTasks();
+            emptyTaskSet.removeAll(emptyTaskSet);
+
             int capacity = computeCapacity(agentVehicle.capacity(), agentVehicles.size()/numberOfVehicles);
 
             Topology.City home = computeHome();
 
-            Vehicle vehicle = (new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home, (long) agentVehicle.speed(), agentVehicle.color())).getInfo();
+            // TODO: setta next e previous city a home
+            VehicleImpl vehicleImpl = new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home, (long) agentVehicle.speed(), agentVehicle.color());//.getInfo();
 
-            enemyVehicles.add(vehicle);
+            vehicleImpl.setTasks(emptyTaskSet);
+
+            // vehicleImpl.moveTo(home);
+
+            enemyVehicles.add(vehicleImpl.getInfo());
         }
 
         return enemyVehicles;
+    }
+
+    //TODO: prova qua
+    private List<Vehicle> createVehicles2(List<Vehicle> agentVehicles, int numberOfVehicles) {
+
+        List<Vehicle> enemyVehicles = new ArrayList<>(numberOfVehicles);
+
+        for (Integer i = 0; i < numberOfVehicles; i++) {
+
+            int randIndex = new Random().nextInt(agentVehicles.size());
+
+            Vehicle agentVehicle = agentVehicles.get(randIndex);
+
+        }
+
+        return null;
+
     }
 
     /**
@@ -642,7 +668,7 @@ public class AuctionStrategy {
 
         List<Topology.City> cities = topology.cities();
 
-        int random = new Random().nextInt() * (cities.size() - 1);
+        int random = new Random().nextInt(cities.size() - 1);
 
         return cities.get(random);
 
@@ -664,6 +690,8 @@ public class AuctionStrategy {
 
         double offer = presentMarginalCost(task, TaskSet.copyOf(agent.getTasks()), agent.vehicles(), agent.id());
 
+        System.out.println("Present Offer: " + offer);
+
         Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(task);
 
         if (balance > balanceThreshold) {
@@ -671,6 +699,8 @@ public class AuctionStrategy {
             double costBound = task.pathLength() * vehicleChosen.costPerKm();
 
             offer = futureMarginalCost(task, offer, costBound, 5);
+
+            System.out.println("Future Offer: " + offer);
         }
 
 
@@ -719,6 +749,8 @@ public class AuctionStrategy {
             }
 
         }
+
+        System.out.println("Final offer: " + offer);
 
         return offer;
     }
