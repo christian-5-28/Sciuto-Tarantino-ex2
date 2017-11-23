@@ -1,5 +1,6 @@
 package template;
 
+import logist.task.Task;
 import logist.task.TaskSet;
 import logist.topology.Topology.City;
 
@@ -26,6 +27,8 @@ public class AgentStatus {
     public AgentStatus(TaskSet taskSet) {
         this.pickUpCitiesBids = new HashMap<>();
         this.deliveryCitiesBids = new HashMap<>();
+        pickUpCitiesPredictions = new HashMap<>();
+        deliveryCitiesPredictions = new HashMap<>();
         this.tasksWon = taskSet;
         this.errors = new ArrayList<>();
 
@@ -47,8 +50,15 @@ public class AgentStatus {
         return deliveryCitiesBids;
     }
 
-    public TaskSet getTasksWon() {
-        return TaskSet.copyOf(tasksWon);
+    public Set<Task> getTasksWon() {
+
+        Set<Task> taskSet = new HashSet<>();
+
+        for (Task task : tasksWon) {
+            taskSet.add(task);
+        }
+
+        return taskSet;
     }
 
     public List<Double> getErrors() {
