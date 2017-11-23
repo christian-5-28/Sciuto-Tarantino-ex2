@@ -415,10 +415,12 @@ public class AuctionStrategy {
         List<Vehicle> vehicles4 = createVehicles(agent.vehicles(), 4);
         List<Vehicle> vehicles5 = createVehicles(agent.vehicles(), 5);
 
-        double prediction2 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles2, agentID);
-        double prediction3 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles3, agentID);
-        double prediction4 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles4, agentID);
-        double prediction5 = presentMarginalCost(task, enemyStatus.getTasksWon(), vehicles5, agentID);
+        Set<Task> taskWon = enemyStatus.getTasksWon();
+
+        double prediction2 = presentMarginalCost(task, taskWon, vehicles2, agentID);
+        double prediction3 = presentMarginalCost(task, taskWon, vehicles3, agentID);
+        double prediction4 = presentMarginalCost(task, taskWon, vehicles4, agentID);
+        double prediction5 = presentMarginalCost(task, taskWon, vehicles5, agentID);
 
         double prediction = (prediction2 + prediction3 + prediction4 + prediction5)/4;
 
@@ -542,6 +544,14 @@ public class AuctionStrategy {
             if (firstAuction) {
                 //TODO: controllare che nel taskset non ci sia già la task vinta
                 agentStatusMap.put(enemy, new AgentStatus(TaskSet.copyOf(agent.getTasks())));
+
+                ArrayList<Double> pickUpPred = new ArrayList<>();
+                pickUpPred.add(lastOffers[enemy].doubleValue());
+                agentStatusMap.get(enemy).getPickUpCitiesPredictions().put(lastTask.pickupCity, pickUpPred);
+
+                ArrayList<Double> deliveryPred = new ArrayList<>();
+                deliveryPred.add(lastOffers[enemy].doubleValue());
+                agentStatusMap.get(enemy).getPickUpCitiesPredictions().put(lastTask.deliveryCity, deliveryPred);
             }
 
             AgentStatus enemyStatus = agentStatusMap.get(enemy);
@@ -626,7 +636,9 @@ public class AuctionStrategy {
             TaskSet emptyTaskSet = agentVehicle.getCurrentTasks();
             emptyTaskSet.removeAll(emptyTaskSet);
 
-            int capacity = computeCapacity(agentVehicle.capacity(), agentVehicles.size()/numberOfVehicles);
+            Double ratio = (double)agentVehicles.size() / (double)numberOfVehicles;
+
+            int capacity = computeCapacity(agentVehicle.capacity(), ratio);
 
             Topology.City home = computeHome();
 
@@ -688,7 +700,13 @@ public class AuctionStrategy {
 
     public double makeBid(Task task) {
 
-        double offer = presentMarginalCost(task, TaskSet.copyOf(agent.getTasks()), agent.vehicles(), agent.id());
+        Set<Task> taskSet = new HashSet<>();
+
+        for (Task task1 : agent.getTasks()) {
+            taskSet.add(task1);
+        }
+
+        double offer = presentMarginalCost(task, taskSet, agent.vehicles(), agent.id());
 
         System.out.println("Present Offer: " + offer);
 
