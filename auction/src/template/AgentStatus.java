@@ -19,17 +19,27 @@ public class AgentStatus {
     private Map<City, List<Double>> pickUpCitiesPredictions;
     private Map<City, List<Double>> deliveryCitiesPredictions;
 
-    private TaskSet tasksWon;
+    private Set<Task> tasksWon;
     private double averageBid = 0;
     private List<Double> errors;
     private boolean alreadyBid = false;
 
-    public AgentStatus(TaskSet taskSet) {
+    /*public AgentStatus(TaskSet taskSet) {
         this.pickUpCitiesBids = new HashMap<>();
         this.deliveryCitiesBids = new HashMap<>();
         pickUpCitiesPredictions = new HashMap<>();
         deliveryCitiesPredictions = new HashMap<>();
         this.tasksWon = taskSet;
+        this.errors = new ArrayList<>();
+
+    }*/
+
+    public AgentStatus() {
+        this.pickUpCitiesBids = new HashMap<>();
+        this.deliveryCitiesBids = new HashMap<>();
+        pickUpCitiesPredictions = new HashMap<>();
+        deliveryCitiesPredictions = new HashMap<>();
+        this.tasksWon = new HashSet<>();
         this.errors = new ArrayList<>();
 
     }
@@ -83,5 +93,9 @@ public class AgentStatus {
 
         return 0;
 
+    }
+
+    public void setAlreadyBid(boolean alreadyBid) {
+        this.alreadyBid = alreadyBid;
     }
 }

@@ -67,7 +67,7 @@ public class CompanyStrategy {
 
         }
 
-        System.out.println("BEST SOLUTION COST: " + bestSolution.objectiveFunction());
+        //System.out.println("BEST SOLUTION COST: " + bestSolution.objectiveFunction());
         return bestSolution;
 
     }
@@ -196,7 +196,7 @@ public class CompanyStrategy {
         a new candidate solution
         */
 
-        System.out.println("starting switch task");
+        //System.out.println("starting switch task");
         for (Vehicle vehicle : oldSolution.getVehiclesDomain()) {
 
             if(vehicle.id() != randVehicle.id()){
@@ -210,7 +210,7 @@ public class CompanyStrategy {
             in the actionsList of the vehicle. We do this for pair-wise action element
             and for each change we obtain a new local Solution
          */
-        System.out.println("starting permutation");
+        //System.out.println("starting permutation");
 
         List<Action> vehicleActionsList = oldSolution.getVehicleActionMap().get(randVehicle);
         int vehicleActionsListSize = vehicleActionsList.size();
