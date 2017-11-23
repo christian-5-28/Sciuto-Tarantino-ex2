@@ -223,11 +223,6 @@ public class Solution {
 
         ActionTimes actionTimes = taskActionTimesMap.get(task);
 
-        if(actionTimes == null){
-            int i = 0;
-        }
-
-
         return actionTimes.pickUpTime < actionTimes.deliveryTime;
 
     }
@@ -298,7 +293,7 @@ public class Solution {
 
             // TODO: vehicle.getCurrentCity() = null
             // cost initialized with the cost to go to the first pickup city from homeCity of the vehicle
-            double cost = vehicle.getCurrentCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();
+            double cost = vehicle.homeCity().distanceTo(vehicleActions.get(0).getTask().pickupCity) * vehicle.costPerKm();
 
             for (int i = 0; i < vehicleActions.size() - 1; i++) {
 

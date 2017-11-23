@@ -131,9 +131,9 @@ public class AuctionStrategy {
         presentTaskSet.add(task);
         CompanyStrategy tempCompanyStrategy = new CompanyStrategy(presentTaskSet, vehicles);
 
-
-        Solution temporary = tempCompanyStrategy.addTask(currentBestSolutionMap.get(agentID), task);
-        temporaryBestSolutionMap.put(agentID, tempCompanyStrategy.SLS(500, timeoutBid, 0.35, 100, temporary));
+        //TODO: OCCHIO STIAMO USANDO INITIAL SOLUTION ANCHE PER SLS FUTURO, CAMBIARE MAPPA CON OBJECTIVE FUNCITON
+        //Solution temporary = tempCompanyStrategy.addTask(currentBestSolutionMap.get(agentID), task);
+        temporaryBestSolutionMap.put(agentID, tempCompanyStrategy.SLS(500, timeoutBid, 0.35, 100, tempCompanyStrategy.initialSolution()));
 
         return temporaryBestSolutionMap.get(agentID).objectiveFunction() - currentBestSolutionMap.get(agentID).objectiveFunction();
     }
@@ -680,9 +680,9 @@ public class AuctionStrategy {
      * @param ratio
      * @return
      */
-    private int computeCapacity(int capacity, int ratio) {
+    private int computeCapacity(int capacity, double ratio) {
 
-        return ratio * capacity;
+        return (int)(ratio * capacity);
 
     }
 
