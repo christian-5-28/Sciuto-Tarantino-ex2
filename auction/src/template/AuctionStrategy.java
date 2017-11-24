@@ -142,6 +142,7 @@ public class AuctionStrategy {
             temporaryBestSolutionMap.put(agentID, temporary);
         }
         // TODO: currentBestSolutionMap.get(agentID) returns null because value is null
+
         return temporary.objectiveFunction() - currentBestSolutionMap.get(agentID).objectiveFunction();
     }
 
@@ -642,7 +643,6 @@ public class AuctionStrategy {
 
     }
 
-    // TODO: problema del null: fai updateMaps con temporaryBestSolutionMap.get(agentID) ma non trova la chiave (0)
     private void updateMaps(int agentID) {
 
         currentBestSolutionMap.put(agentID, temporaryBestSolutionMap.get(agentID));
@@ -756,12 +756,12 @@ public class AuctionStrategy {
 
         Set<Task> taskSet = new HashSet<>();
 
-        for (Task task1 : agent.getTasks()) {
-            taskSet.add(task1);
-        }
+        taskSet.addAll(agent.getTasks());
 
         // evaluating the initial offer of OUR agent
         double offer = presentMarginalCost(task, taskSet, agent.vehicles(), agent.id(), true);
+
+        offer = Math.max(offer, 0);
 
         System.out.println("Present Offer: " + offer);
 
@@ -776,6 +776,8 @@ public class AuctionStrategy {
             double costBound = task.pathLength() * vehicleChosen.costPerKm();
 
             offer = futureMarginalCost(task, offer, costBound, 5);
+
+            offer = Math.max(offer, 0);
 
             System.out.println("Future Offer: " + offer);
         }
