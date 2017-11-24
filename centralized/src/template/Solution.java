@@ -270,6 +270,7 @@ public class Solution {
      * sum of all the vehicle costs.
      * @return
      */
+    // TODO: spesso ritorna 0
     public double objectiveFunction(){
 
         double totalCost = 0.;

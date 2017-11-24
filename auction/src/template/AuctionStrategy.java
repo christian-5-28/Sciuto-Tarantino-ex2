@@ -141,6 +141,7 @@ public class AuctionStrategy {
         if(realOffer){
             temporaryBestSolutionMap.put(agentID, temporary);
         }
+        // TODO: currentBestSolutionMap.get(agentID) returns null because value is null
         return temporary.objectiveFunction() - currentBestSolutionMap.get(agentID).objectiveFunction();
     }
 
@@ -637,6 +638,7 @@ public class AuctionStrategy {
 
     }
 
+    // TODO: problema del null: fai updateMaps con temporaryBestSolutionMap.get(agentID) ma non trova la chiave (0)
     private void updateMaps(int agentID) {
 
         currentBestSolutionMap.put(agentID, temporaryBestSolutionMap.get(agentID));
