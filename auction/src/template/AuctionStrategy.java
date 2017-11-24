@@ -580,7 +580,11 @@ public class AuctionStrategy {
             if (enemy == agent.id()) {
                 if (lastWinner == agent.id()) {
                     //TODO: bisogna aggiungere qua la task vinta?
-                    balance += lastOffers[enemy];
+                    Task newLastTask = taskSetSameCities(temporaryBestSolutionMap.get(agent.id()).getTaskDomain(), lastTask);
+                    Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(newLastTask);
+                    double cost = lastTask.pathLength() * vehicleChosen.costPerKm();
+                    balance += lastOffers[enemy] - cost ;
+                    System.out.println(balance);
                     updateNeededTasks();
                 }
                 continue;
@@ -764,7 +768,7 @@ public class AuctionStrategy {
         Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(task);
 
         /*
-         if our balance is higher than the threshold we use a more agressive strategy,
+         if our balance is higher than the threshold we use a more aggressive strategy,
          we consider the porbability of future tasks with the method 'futureMarginalCost'
           */
         if (balance > balanceThreshold) {
