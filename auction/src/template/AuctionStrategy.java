@@ -327,7 +327,7 @@ public class AuctionStrategy {
 
             // Here we compute the prediction of the bid - marginal cost of an agent
             List<Double> range = mCostPrediction2(enemyStatus, agentID, task);
-            Double minRange = range.get(0);
+            Double minRange = (range.get(0) + range.get(1)) /2;
 
             // We save the id of the enemy that made the minimum bid
             if (minRange < min) {
@@ -567,7 +567,7 @@ public class AuctionStrategy {
      */
     public void auctionCompleted(Task lastTask, Long[] lastOffers, int lastWinner) {
 
-        System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " + lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
+        //System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " + lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
 
         Topology.City pickUpCity = lastTask.pickupCity;
         Topology.City deliveryCity = lastTask.deliveryCity;
@@ -645,7 +645,9 @@ public class AuctionStrategy {
 
     private void updateMaps(int agentID) {
 
-        currentBestSolutionMap.put(agentID, temporaryBestSolutionMap.get(agentID));
+        if(temporaryBestSolutionMap.keySet().contains(agentID)){
+            currentBestSolutionMap.put(agentID, temporaryBestSolutionMap.get(agentID));
+        }
     }
 
     /**
@@ -696,12 +698,9 @@ public class AuctionStrategy {
 
             Topology.City home = computeHome();
 
-            // TODO: setta next e previous city a home
             VehicleImpl vehicleImpl = new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home, (long) agentVehicle.speed(), agentVehicle.color());//.getInfo();
 
             vehicleImpl.setTasks(emptyTaskSet);
-
-            // vehicleImpl.moveTo(home);
 
             enemyVehicles.add(vehicleImpl.getInfo());
         }
@@ -763,7 +762,7 @@ public class AuctionStrategy {
 
         offer = Math.max(offer, 0);
 
-        System.out.println("Present Offer: " + offer);
+        //System.out.println("Present Offer: " + offer);
 
         Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(task);
 
@@ -771,7 +770,8 @@ public class AuctionStrategy {
          if our balance is higher than the threshold we use a more aggressive strategy,
          we consider the porbability of future tasks with the method 'futureMarginalCost'
           */
-        if (balance > balanceThreshold) {
+        // TODO: tolta condizione per debug: balance > balanceThreshold
+        if (false) {
 
             double costBound = task.pathLength() * vehicleChosen.costPerKm();
 
@@ -779,7 +779,7 @@ public class AuctionStrategy {
 
             offer = Math.max(offer, 0);
 
-            System.out.println("Future Offer: " + offer);
+            //System.out.println("Future Offer: " + offer);
         }
 
         // Here we predict the offers of our enemies
@@ -829,9 +829,9 @@ public class AuctionStrategy {
 
         }
 
-        System.out.println("Final offer: " + offer);
+        //System.out.println("Final offer: " + offer);
 
-        return offer;
+        return Math.max(0,offer);
     }
 
     /**

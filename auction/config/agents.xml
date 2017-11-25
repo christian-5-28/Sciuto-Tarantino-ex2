@@ -13,5 +13,15 @@
 		<set class-path="bin/"/>
 		<set class-name="template.RandomAuctionAgent"/>
 	</agent>
-	
+
+    <agent name="auction-russ">
+        <set class-path="bin/"/>
+        <set class-name="ourAgent.AuctionImpl"/>
+    </agent>
+
+    <agent name="auction-new">
+        <set class-path="bin/"/>
+        <set class-name="template.AuctionAgent2"/>
+    </agent>
+
 </agents>

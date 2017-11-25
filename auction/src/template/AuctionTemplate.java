@@ -38,6 +38,7 @@ public class AuctionTemplate implements AuctionBehavior {
 	private CompanyStrategy companyStrategy;
 	private Solution bestSolution;
 	private long timeout_plan;
+	private long totalAmountOfMyCost;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -133,7 +134,10 @@ public class AuctionTemplate implements AuctionBehavior {
 				planList.add(createVehiclePlan(vehicle, bestSolution.getVehicleActionMap().get(vehicle)));
 			}
 
-			System.out.println("Plan...");
+			double bestSolutionCost = bestSolution.objectiveFunction();
+
+			System.out.println("AGENT " + agent.id() + " SOLUTION COST = " + bestSolutionCost);
+
 
 			return planList;
 
@@ -211,32 +215,6 @@ public class AuctionTemplate implements AuctionBehavior {
 
 		}
 
-		return plan;
-	}
-
-
-
-
-	private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
-		City current = vehicle.getCurrentCity();
-		Plan plan = new Plan(current);
-
-		for (Task task : tasks) {
-			// move: current city => pickup location
-			for (City city : current.pathTo(task.pickupCity))
-				plan.appendMove(city);
-
-			plan.appendPickup(task);
-
-			// move: pickup location => delivery location
-			for (City city : task.path())
-				plan.appendMove(city);
-
-			plan.appendDelivery(task);
-
-			// set current city
-			current = task.deliveryCity;
-		}
 		return plan;
 	}
 }
