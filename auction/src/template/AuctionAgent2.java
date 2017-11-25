@@ -5,7 +5,6 @@ import logist.agent.Agent;
 import logist.behavior.AuctionBehavior;
 import logist.config.Parsers;
 import logist.plan.Plan;
-import logist.simulation.Company;
 import logist.simulation.Vehicle;
 import logist.simulation.VehicleImpl;
 import logist.task.Task;
@@ -45,9 +44,9 @@ public class AuctionAgent2 implements AuctionBehavior {
     private final int SLS_THRESHOLD = 100;
     private final double SLS_PROB = 0.35;
 
-    private int totalAmountOfMyCost;
+    private int totalAmountOfMyWonBids;
     private Map<Integer, List<Double>> enemiesErrorRatiosMap;
-    private Map<Integer, List<Long>> enemiesRealBidsMap;
+    private Map<Integer, List<Long>> enemiesWonBidsMap;
     private Map<Integer, Set<Task>> agentsTasksWonMap;
     private Map<Integer, Double> enemiesLastPrediction;
     private Solution myCurrentSolution;
@@ -67,9 +66,9 @@ public class AuctionAgent2 implements AuctionBehavior {
         this.currentCity = vehicle.homeCity();
 
         /// variables for strategy///
-        totalAmountOfMyCost = 0;
+        totalAmountOfMyWonBids = 0;
         enemiesErrorRatiosMap = new HashMap<>();
-        enemiesRealBidsMap = new HashMap<>();
+        enemiesWonBidsMap = new HashMap<>();
         agentsTasksWonMap = new HashMap<>();
         enemiesLastPrediction = new HashMap<>();
 
@@ -98,8 +97,18 @@ public class AuctionAgent2 implements AuctionBehavior {
 
     }
 
+    // for description see comments inside the method
     @Override
     public Long askPrice(Task task) {
+        /*
+         *  DESCRIPTION:
+         * computes our offer for the task in the current auction. First,
+         * it evaluates our marginal cost, then it updates the offer considering
+         * the minimum prediction of the bid of our enemies. After this, it controls
+         * that our offer is not less then our minimum threshold and finally
+         * it updates the offer if our total reward is less then the cost of
+         * our current best solution for the plan.
+         */
 
         Set<Task> tasks = new HashSet<>();
 
@@ -119,23 +128,32 @@ public class AuctionAgent2 implements AuctionBehavior {
             tasks.add(task);
         }
 
-        CompanyStrategy companyStrategy = new CompanyStrategy(tasks, agent.vehicles());
-
         //evaluating our future solution with also the task in the auction
-        myTemporarySolution = companyStrategy.SLS(MAX_ITER, timeout_bid, SLS_PROB, SLS_THRESHOLD, companyStrategy.initialSolution());
+        CompanyStrategy companyStrategy = new CompanyStrategy(tasks, agent.vehicles());
+        myTemporarySolution = companyStrategy.SLS(MAX_ITER, timeout_bid, SLS_PROB, SLS_THRESHOLD,
+                                                  companyStrategy.initialSolution());
 
-        //double myOffer = myTemporarySolution.objectiveFunction() - totalAmountOfMyCost;
+        // our present marginal cost
         double myOffer = myTemporarySolution.objectiveFunction() - myCurrentSolution.objectiveFunction();
-
         System.out.println("PRESENT OFFER: " + myOffer);
+
         //evaluating the minimum prediction among my enemies
         double minimumEnemyPrediction = predictLowestEnemyBid(task);
 
         if(minimumEnemyPrediction < Double.POSITIVE_INFINITY){
 
+            /*
+             if our offer is less than the minimum prediction we can raise our offer in
+             order to obtain a higher reward. We raise the offer to the max between
+             our offer and the 80% of the minimum prediction bid of the enemies
+             */
             if(myOffer < minimumEnemyPrediction){
                 myOffer = Math.max(myOffer, 0.80*minimumEnemyPrediction);
             }
+            /*
+             if our offer is higher than the minimum prediction we update the
+             offer to the 80% of the minimum prediction bid of the enemies
+              */
             else {
                 myOffer = 0.80*minimumEnemyPrediction;
             }
@@ -145,21 +163,28 @@ public class AuctionAgent2 implements AuctionBehavior {
         System.out.println("ENEMY PREDICTION " + minimumEnemyPrediction + " UPDATED OFFER: " + myOffer);
 
 
-        //finally our offer is never lower than our standard cost of task
+        /*
+        after this, our offer is never lower than our standard cost of task, that is the
+        full cost of task (pathLenght * vehicleCost) multiplied by a coefficient (33%)
+         */
         Vehicle vehicleChosen = myTemporarySolution.getVehicle(task);
         double standardCost = task.pathLength() * vehicleChosen.costPerKm();
         myOffer = Math.max(MIN_OFFER_COEFFICIENT * standardCost, myOffer);
         System.out.println("OFFER AFTER STANDARD COST: " + myOffer);
 
-        // checking our balance
+        /*
+          Finally, we check if our total reward ( sum of bids for tasks that we won)
+          is less than our cost of current solution of the computed plan. If this is
+          the case, we raise a little bit our offer because we have negative balance
+         */
         double currentSolutionCost = myCurrentSolution.objectiveFunction();
-        if(totalAmountOfMyCost < (1 - SAFETY_BOUND_REWARD) * currentSolutionCost){
+        if(totalAmountOfMyWonBids < (1 - SAFETY_BOUND_REWARD) * currentSolutionCost){
 
             myOffer = (1 + SAFETY_BOUND_REWARD) * myOffer;
             System.out.println("OFFER AFTER SAFETY BOUND REWARD: " + myOffer);
         }
 
-        // bid less for the first auctions
+        //for the first auctions, we are more aggressive and we bid less because we want the tasks
         if(auctionNumber < INITIAL_ROUNDS_RANGE){
             myOffer = ((double)(1 + auctionNumber) / (double)INITIAL_ROUNDS_RANGE) * myOffer;
         }
@@ -167,6 +192,14 @@ public class AuctionAgent2 implements AuctionBehavior {
         return (long)myOffer;
     }
 
+    /**
+     * this method evaluates the prediction for the bid of each enemy in
+     * the auction. For each enemy, first it evaluates the marginal cost
+     * considering the tasks won of the enemy, then it multiplies this prediction
+     * for a error ratio, in order to take into account all our mistakes
+     * in our previous predictions for that enemy. Finally it returns
+     * the prediction with the lowest value.
+     */
     private double predictLowestEnemyBid(Task task) {
 
         double lowestEnemyBid = Double.POSITIVE_INFINITY;
@@ -176,19 +209,29 @@ public class AuctionAgent2 implements AuctionBehavior {
             int enemyID = enemyErrorRatio.getKey();
             List<Double> errorRatiosList = enemyErrorRatio.getValue();
 
-            // computing the error ratio in order to take into account all our previous error regarding the prediction
+            /*
+              computing the error ratio in order to take into account all
+              our previous error regarding the prediction
+             */
             double errorRatio = computeErrorRatio(errorRatiosList);
 
+            // computing the marginal cost for the enemy
             double enemyBid = predictEnemyBid(enemyID, task);
 
+            // updating the marginal cost with the error ratio
             double prediction = errorRatio * enemyBid;
 
-            System.out.println("STANDARD ENEMY PREDICTION: " + enemyBid + " ERROR RATIO: " + errorRatio + " ERROR UPDATED PREDICTION: " + prediction);
+            System.out.println("STANDARD ENEMY PREDICTION: " + enemyBid + " ERROR RATIO: " + errorRatio +
+                                " ERROR UPDATED PREDICTION: " + prediction);
 
             if(prediction < lowestEnemyBid){
                 lowestEnemyBid = prediction;
             }
-            // saving our last prediction on the specific enemy
+
+            /* saving our last prediction for the specific enemy,
+               useful for the update of the error list when the
+               auction is ended.
+             */
             enemiesLastPrediction.put(enemyID, prediction);
 
         }
@@ -198,13 +241,17 @@ public class AuctionAgent2 implements AuctionBehavior {
 
     /**
      * computing the weighted error ratio between predictions and
-     * real bids, the error of the last auctions weight more.
+     * real bids, the errors of the last auctions weight more.
      */
     private double computeErrorRatio(List<Double> errorRatiosList) {
 
         double weightedError = 0.;
         double weights = 0;
 
+        /*
+         this is our coefficient for taking into account the importance
+         of the past.
+         */
         double gammaFuture = 0.8;
 
         for (int index = errorRatiosList.size() -1 ; index >= 0 ; index--) {
@@ -212,12 +259,20 @@ public class AuctionAgent2 implements AuctionBehavior {
 
                 weightedError += gammaFuture*errorRatiosList.get(index);
                 weights += gammaFuture;
+
+                /*
+                  the coeffiecient is squared in every iteration in order
+                   to give less weight to the errors of the past. This is
+                   because we want to react fast to a fast change of our
+                   enemy strategy.
+                 */
                 gammaFuture = Math.pow(gammaFuture, 2);
         }
 
         double errorRatio = weightedError / (weights + 1e-10);
 
         System.out.println("ERROR RATIO UNBOUNDED: " + errorRatio);
+
         //bounding the error rapport
         errorRatio = Math.min(3, errorRatio);
         errorRatio = Math.max(0.01, errorRatio);
@@ -226,8 +281,8 @@ public class AuctionAgent2 implements AuctionBehavior {
     }
 
     /**
-     * Method that create the vehicles for a SLS of an enemy
-     * @param agentVehicles
+     * Method that create the vehicles for a SLS of an enemy.
+     * it computes the capacity and a random home city.
      */
     private List<Vehicle> createVehicles(List<Vehicle> agentVehicles, int numberOfVehicles) {
 
@@ -239,7 +294,6 @@ public class AuctionAgent2 implements AuctionBehavior {
 
             Vehicle agentVehicle = agentVehicles.get(randIndex);
 
-            //TODO: problema di current tasks -> RISOLTO
             TaskSet emptyTaskSet = agentVehicle.getCurrentTasks();
             emptyTaskSet.removeAll(emptyTaskSet);
 
@@ -249,7 +303,8 @@ public class AuctionAgent2 implements AuctionBehavior {
 
             Topology.City home = computeHome();
 
-            VehicleImpl vehicleImpl = new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home, (long) agentVehicle.speed(), agentVehicle.color());//.getInfo();
+            VehicleImpl vehicleImpl = new VehicleImpl(i, i.toString(), capacity, agentVehicle.costPerKm(), home,
+                                                      (long) agentVehicle.speed(), agentVehicle.color());
 
             vehicleImpl.setTasks(emptyTaskSet);
 
@@ -260,24 +315,20 @@ public class AuctionAgent2 implements AuctionBehavior {
     }
 
     /**
-     * Select a random home of a vehicle
+     * Select a random home of a vehicle.
      * @return
      */
     private Topology.City computeHome() {
 
         List<Topology.City> cities = topology.cities();
-
         int random = new Random().nextInt(cities.size() - 1);
-
         return cities.get(random);
-
     }
 
     /**
-     * Compute the capacity of a new vehicle: it's between 0.8 and 1.2 the original capacity
-     * @param capacity
-     * @param ratio
-     * @return
+     * Compute the capacity of a new vehicle: it's the ratio between
+     * the number of vehicles of our agent and the number of vehicles
+     * of the new agent.
      */
     private int computeCapacity(int capacity, double ratio) {
 
@@ -285,14 +336,23 @@ public class AuctionAgent2 implements AuctionBehavior {
 
     }
 
+    /**
+     * it computes the marginal cost for our enemy. During this
+     * prediction the number of vehicles of the enemy agent are not know
+     * so it computes four different prediction with 2, 3, 4 and 5 vehicles
+     * and then it evaluates the mean of the prediction. After this,
+     * marginal cost is obtained by subtracting the total cost of the tasks
+     * won by the enemy.
+     */
     private double predictEnemyBid(int enemyID, Task task) {
 
-        ////////////////
+        // creating the different list of vehicles:
         List<Vehicle> vehicles2 = createVehicles(agent.vehicles(), 2);
         List<Vehicle> vehicles3 = createVehicles(agent.vehicles(), 3);
         List<Vehicle> vehicles4 = createVehicles(agent.vehicles(), 4);
         List<Vehicle> vehicles5 = createVehicles(agent.vehicles(), 5);
 
+        // creating a set of task with the tasks won by the enemy and the task of the auction:
         Set<Task> taskWon = new HashSet<>();
         if (agentsTasksWonMap.keySet().contains(enemyID)) {
             for (Task task1 : agentsTasksWonMap.get(enemyID)) {
@@ -301,8 +361,8 @@ public class AuctionAgent2 implements AuctionBehavior {
         }
         taskWon.add(task);
 
+        // evaluating the different predictions using the lists of vehicles:
         CompanyStrategy companyStrategy = new CompanyStrategy(taskWon, vehicles2);
-
         double prediction2 = companyStrategy.SLS(MAX_ITER, timeout_bid, SLS_PROB,
                 SLS_THRESHOLD, companyStrategy.initialSolution()).objectiveFunction();
 
@@ -318,54 +378,75 @@ public class AuctionAgent2 implements AuctionBehavior {
         double prediction5 = companyStrategy.SLS(MAX_ITER, timeout_bid, SLS_PROB,
                 SLS_THRESHOLD, companyStrategy.initialSolution()).objectiveFunction();
 
-
+        // taking the total cost for the enemy of its tasks won
         double enemyTotalCost = getEnemyTotalCost(enemyID);
+
+        // evaluating the marginal cost: calculating the mean of prediction and the subtracting the enemy cost
         double prediction = ((prediction2 + prediction3 + prediction4 + prediction5)/4.0) - enemyTotalCost;
 
-        System.out.println("PREDICTIONS ENEMY: 2)" + prediction2 + " 3)" + prediction3 + " 4)" + prediction4 + " 5)" + prediction5);
+        System.out.println("PREDICTIONS ENEMY: 2)" + prediction2 + " 3)" + prediction3 + " 4)"
+                            + prediction4 + " 5)" + prediction5);
+
         System.out.println("ENEMY TOTAL BIDS: " + enemyTotalCost);
 
         return prediction;
-        //////////////////
 
     }
 
+    /**
+     * returns the sum of the bid for tasks won
+     * of the enemy agent.
+     */
     private double getEnemyTotalCost(int enemyID) {
 
         double cost = 0.;
-        if(enemiesRealBidsMap.keySet().contains(enemyID)){
-            for (Long enemyRealBid : enemiesRealBidsMap.get(enemyID)) {
+        if(enemiesWonBidsMap.keySet().contains(enemyID)){
+            for (Long enemyRealBid : enemiesWonBidsMap.get(enemyID)) {
                 cost += enemyRealBid;
             }
         }
         return cost;
     }
 
+    // for the description see comments inside the code
     @Override
     public void auctionResult(Task lastTask, int lastWinner, Long[] lastOffers) {
 
-        System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " + lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
+        System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " +
+                           lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
 
-        //UPDATES
+        /*
+         it saves the task won in the set of task won for the winner agent
+         in the agentsTasksWonMap (useful for the evaluation of the marginal cost)
+         */
         if(!agentsTasksWonMap.keySet().contains(lastWinner)){
             agentsTasksWonMap.put(lastWinner, new HashSet<>());
         }
         agentsTasksWonMap.get(lastWinner).add(lastTask);
 
+
         for (int enemyID = 0; enemyID < lastOffers.length; enemyID++) {
 
             if(enemyID != agent.id()){
 
+                /*
+                  for each enemy agent we save its actual bid in the list
+                  inside the 'enemiesWonBidsMap'.
+                 */
                 long lastOffer = lastOffers[enemyID];
                 if(lastWinner == enemyID){
-                    if(!enemiesRealBidsMap.keySet().contains(enemyID)){
-                        enemiesRealBidsMap.put(enemyID, new ArrayList<>());
+                    if(!enemiesWonBidsMap.keySet().contains(enemyID)){
+                        enemiesWonBidsMap.put(enemyID, new ArrayList<>());
                     }
-                    enemiesRealBidsMap.get(enemyID).add(lastOffer);
+                    enemiesWonBidsMap.get(enemyID).add(lastOffer);
                 }
 
+                /*
+                    it evaluates the last error ratio between the actual bid
+                    of the enemy and our prediction of the bid of the enemy.
+                 */
+                //TODO: considera che last offer possa essere uguale a zero o nulla.
                 Double lastPrediction = enemiesLastPrediction.get(enemyID);
-
                 double newErrorRatio = lastOffer;
 
                 if(lastPrediction != null){
@@ -377,6 +458,7 @@ public class AuctionAgent2 implements AuctionBehavior {
 
                 System.out.println("AGENT " + enemyID + " LAST ERROR RATIO: " + newErrorRatio);
 
+                // it adds the new error ratio in the list of error in the 'enemiesErrorRatiosMap'.
                 if(!enemiesErrorRatiosMap.keySet().contains(enemyID)){
                     enemiesErrorRatiosMap.put(enemyID, new ArrayList<>());
                 }
@@ -385,6 +467,19 @@ public class AuctionAgent2 implements AuctionBehavior {
 
         }
 
+        /*
+          if our agent won the auction it updates the variables of our agent,
+          the 'totalAmountOfMyWonBids' and the 'myCurrentSolution'.
+         */
+        if(lastWinner == agent.id()){
+            totalAmountOfMyWonBids += lastOffers[lastWinner];
+            myCurrentSolution = new Solution(myTemporarySolution);
+            System.out.println("MY TOTAL REWARD: " + totalAmountOfMyWonBids);
+        }
+
+        auctionNumber++;
+
+        // only for printing results
         for (int agentID = 0; agentID < lastOffers.length; agentID++) {
             if(agentID == agent.id()){
                 System.out.println("MY BID: " + lastOffers[agentID]);
@@ -392,14 +487,6 @@ public class AuctionAgent2 implements AuctionBehavior {
             else
                 System.out.println("AGENT " + agentID + " BID: " + lastOffers[agentID]);
         }
-
-        if(lastWinner == agent.id()){
-            totalAmountOfMyCost += lastOffers[lastWinner];
-            myCurrentSolution = new Solution(myTemporarySolution);
-            System.out.println("MY TOTAL REWARD: " + totalAmountOfMyCost);
-        }
-
-        auctionNumber++;
 
     }
 
@@ -412,7 +499,8 @@ public class AuctionAgent2 implements AuctionBehavior {
             CompanyStrategy companyStrategy = new CompanyStrategy(tasks, vehicles);
             System.out.println("starting SLS");
             long start = System.currentTimeMillis();
-            Solution bestSolution = companyStrategy.SLS(10000, timeout_bid, 0.35, 200, companyStrategy.initialSolution());
+            Solution bestSolution = companyStrategy.SLS(10000, timeout_bid, 0.35, 200,
+                                                        companyStrategy.initialSolution());
             long end = System.currentTimeMillis();
             System.out.println("completed SLS in " + (end - start) / 1000 + "seconds");
 
@@ -424,8 +512,9 @@ public class AuctionAgent2 implements AuctionBehavior {
 
             double bestSolutionCost = bestSolution.objectiveFunction();
 
-            System.out.println("AGENT " + agent.id() + ": BID REWARD = " + totalAmountOfMyCost +
-                    " FINAL SOLUTION COST = " + bestSolutionCost + "CURRENT SOLUTION COST: " + myCurrentSolution.objectiveFunction());
+            System.out.println("AGENT " + agent.id() + ": BID REWARD = " + totalAmountOfMyWonBids +
+                                " FINAL SOLUTION COST = " + bestSolutionCost + "CURRENT SOLUTION COST: " +
+                                myCurrentSolution.objectiveFunction());
 
             return planList;
         }
@@ -434,13 +523,9 @@ public class AuctionAgent2 implements AuctionBehavior {
         private List<Plan> createEmptyPlan(List<Vehicle> vehicles) {
 
             List<Plan> planList = new ArrayList<>();
-
             for (Vehicle vehicle : vehicles) {
-
                 planList.add(new Plan(vehicle.homeCity()));
-
             }
-
             return planList;
         }
 
@@ -485,11 +570,8 @@ public class AuctionAgent2 implements AuctionBehavior {
                         break;
                     default:
                         break;
-
                 }
-
             }
-
             return plan;
         }
 }
