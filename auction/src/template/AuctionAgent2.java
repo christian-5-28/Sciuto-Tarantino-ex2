@@ -18,10 +18,6 @@ import java.util.*;
  * Created by Christian on 24/11/2017.
  */
 
-
-//TODO: fixare ratio in modo da non essere negativo
-//TODO: considerare più allettanti le prime offerte
-//TODO: rivedere l'update della strategy nemica, a volte è negativo.
 public class AuctionAgent2 implements AuctionBehavior {
 
 
