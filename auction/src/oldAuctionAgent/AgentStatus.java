@@ -1,4 +1,4 @@
-package template;
+package oldAuctionAgent;
 
 import logist.task.Task;
 import logist.task.TaskSet;

@@ -6,20 +6,22 @@
 	<!-- #### AUCTION AGENTS ### -->
 	<agent name="auction-random">
 		<set class-path="bin/"/>
-		<set class-name="template.AuctionTemplate"/>
+		<set class-name="oldAuctionAgent.AuctionTemplate"/>
 	</agent>
+
 
 	<agent name="auction-random2">
 		<set class-path="bin/"/>
-		<set class-name="template.RandomAuctionAgent"/>
+		<set class-name="randomAgent.RandomAuctionAgent"/>
 	</agent>
 
     <agent name="auction-russ">
         <set class-path="bin/"/>
-        <set class-name="ourAgent.AuctionImpl"/>
+        <set class-name="russAgent.AuctionImpl"/>
     </agent>
 
-    <agent name="auction-new">
+
+    <agent name="auction-main-15">
         <set class-path="bin/"/>
         <set class-name="template.AuctionAgent2"/>
     </agent>

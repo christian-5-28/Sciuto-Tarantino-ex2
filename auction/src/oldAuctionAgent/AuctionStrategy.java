@@ -1,4 +1,4 @@
-package template;
+package oldAuctionAgent;
 
 import logist.agent.Agent;
 import logist.simulation.Vehicle;
@@ -7,6 +7,8 @@ import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
+import template.CompanyStrategy;
+import template.Solution;
 
 import java.util.*;
 
@@ -466,10 +468,6 @@ public class AuctionStrategy {
                 List<Double> puBids = pickUpCitiesBids.get(pickupCity);
 
                 // For every auction, we compute the abs error and then we take the average of them
-                //TODO: togli controllo if, DEBUG
-                if(puBids.size() != pickupCityPredictions.size()){
-                    System.out.println("ERROR");
-                }
                 error = computeError(puBids, error, pickupCityPredictions);
                 numberOfBids += computeNumberOfBids(puBids);
 
@@ -480,21 +478,12 @@ public class AuctionStrategy {
 
                 List<Double> dBids = deliveryCityBids.get(deliveryCity);
 
-                //TODO: togli controllo if, DEBUG
-                if(dBids.size() != deliveryCityPredictions.size()){
-                    System.out.println("ERROR");
-                }
-
                 // For every auction, we compute the abs error and then we take the average of them
                 error += computeError(dBids, error, deliveryCityPredictions);
                 numberOfBids += computeNumberOfBids(dBids);
             }
 
             // error is the average error that we did in our predictions
-            //TODO: togli controllo if, DEBUG
-            if(numberOfBids == 0){
-                System.out.println("ERROR");
-            }
 
             if(numberOfBids != 0){
                 error /= numberOfBids;
@@ -539,10 +528,6 @@ public class AuctionStrategy {
 
         double error2 = error;
 
-        if(bids.size() != cityPredictions.size()){
-            System.out.println("ERRORE");
-        }
-
         for (int i = 0; i < bids.size(); i++) {
 
             // It can happen that an agent makes a null offer
@@ -555,7 +540,6 @@ public class AuctionStrategy {
     }
 
 
-    //TODO: chiamare a auction completed
     /**
      * After the auction is completed, we have to update the agents' status.
      * First we add the bids they made (if they made one).
@@ -566,8 +550,6 @@ public class AuctionStrategy {
      * @param lastWinner
      */
     public void auctionCompleted(Task lastTask, Long[] lastOffers, int lastWinner) {
-
-        //System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " + lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
 
         Topology.City pickUpCity = lastTask.pickupCity;
         Topology.City deliveryCity = lastTask.deliveryCity;
@@ -580,7 +562,6 @@ public class AuctionStrategy {
             // If it's our agent we break
             if (enemy == agent.id()) {
                 if (lastWinner == agent.id()) {
-                    //TODO: bisogna aggiungere qua la task vinta?
                     Task newLastTask = taskSetSameCities(temporaryBestSolutionMap.get(agent.id()).getTaskDomain(), lastTask);
                     Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(newLastTask);
                     double cost = lastTask.pathLength() * vehicleChosen.costPerKm();
@@ -592,7 +573,6 @@ public class AuctionStrategy {
             }
 
             if (firstAuction) {
-                //TODO: controllare che nel taskset non ci sia già la task vinta
                 agentStatusMap.put(enemy, new AgentStatus());
 
                 ArrayList<Double> pickUpPred = new ArrayList<>();
@@ -708,22 +688,6 @@ public class AuctionStrategy {
         return enemyVehicles;
     }
 
-    //TODO: prova qua
-    private List<Vehicle> createVehicles2(List<Vehicle> agentVehicles, int numberOfVehicles) {
-
-        List<Vehicle> enemyVehicles = new ArrayList<>(numberOfVehicles);
-
-        for (Integer i = 0; i < numberOfVehicles; i++) {
-
-            int randIndex = new Random().nextInt(agentVehicles.size());
-
-            Vehicle agentVehicle = agentVehicles.get(randIndex);
-
-        }
-
-        return null;
-
-    }
 
     /**
      * Select a random home of a vehicle

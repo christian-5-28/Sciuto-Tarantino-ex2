@@ -9,7 +9,7 @@ import logist.task.Task;
  */
 public class Action {
 
-    enum ActionType {
+    public enum ActionType {
         PICKUP,
         DELIVERY
     }

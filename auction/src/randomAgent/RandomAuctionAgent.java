@@ -1,4 +1,4 @@
-package template;
+package randomAgent;
 
 //the list of imports
 import java.util.ArrayList;

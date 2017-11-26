@@ -1,4 +1,4 @@
-package template;
+package oldAuctionAgent;
 
 //the list of imports
 import java.util.ArrayList;
@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Random;
 
 import logist.LogistSettings;
-import logist.Measures;
 import logist.behavior.AuctionBehavior;
 import logist.agent.Agent;
 import logist.config.Parsers;
@@ -17,6 +16,9 @@ import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
 import logist.topology.Topology.City;
+import template.Action;
+import template.CompanyStrategy;
+import template.Solution;
 
 /**
  * A very simple auction agent that assigns all tasks to its first vehicle and
@@ -136,7 +138,12 @@ public class AuctionTemplate implements AuctionBehavior {
 
 			double bestSolutionCost = bestSolution.objectiveFunction();
 
-			System.out.println("AGENT " + agent.id() + " SOLUTION COST = " + bestSolutionCost);
+			double reward = 0.;
+            for (Task task : agent.getTasks()) {
+                reward += task.reward;
+            }
+
+			System.out.println("AGENT " + agent.id() + " REWARD: " + reward + " SOLUTION COST = " + bestSolutionCost);
 
 
 			return planList;
