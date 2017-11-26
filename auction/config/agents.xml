@@ -23,7 +23,7 @@
 
     <agent name="auction-main-15">
         <set class-path="bin/"/>
-        <set class-name="template.AuctionAgent2"/>
+        <set class-name="template.AuctionAgentMain"/>
     </agent>
 
 </agents>

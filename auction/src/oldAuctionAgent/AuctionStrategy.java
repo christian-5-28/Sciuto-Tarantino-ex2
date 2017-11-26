@@ -42,6 +42,7 @@ public class AuctionStrategy {
     //TODO: variabile che viene usata per avere una strategia aggressiva o meno
 
     private boolean firstAuction = true;
+    private double totalAmountOfMyWonBids;
 
     /**
      *
@@ -551,6 +552,8 @@ public class AuctionStrategy {
      */
     public void auctionCompleted(Task lastTask, Long[] lastOffers, int lastWinner) {
 
+        //System.out.println("AUCTION NUMBER: " + auctionNumber + ". THE WINNER IS AGENT " + lastWinner + " WITH OFFER: " + lastOffers[lastWinner]);
+
         Topology.City pickUpCity = lastTask.pickupCity;
         Topology.City deliveryCity = lastTask.deliveryCity;
 
@@ -566,8 +569,10 @@ public class AuctionStrategy {
                     Vehicle vehicleChosen = temporaryBestSolutionMap.get(agent.id()).getVehicle(newLastTask);
                     double cost = lastTask.pathLength() * vehicleChosen.costPerKm();
                     balance += lastOffers[enemy] - cost ;
+                    totalAmountOfMyWonBids += lastOffers[enemy];
                     System.out.println(balance);
                     updateNeededTasks();
+                    //System.out.println("MY TOTAL REWARD: " + totalAmountOfMyWonBids);
                 }
                 continue;
             }
@@ -620,6 +625,16 @@ public class AuctionStrategy {
         if (firstAuction) {
             firstAuction = false;
         }
+
+        /* only for printing results
+        for (int agentID = 0; agentID < lastOffers.length; agentID++) {
+            if(agentID == agent.id()){
+                System.out.println("MY BID: " + lastOffers[agentID]);
+            }
+            else
+                System.out.println("AGENT " + agentID + " BID: " + lastOffers[agentID] + "\n\n");
+
+        }*/
 
     }
 
@@ -795,7 +810,12 @@ public class AuctionStrategy {
 
         //System.out.println("Final offer: " + offer);
 
-        return Math.max(0,offer);
+        //return Math.max(0,offer);
+
+        double finalOffer = Math.max(0, offer);
+
+        System.out.println("FINAL OLD AGENT OFFER: " + finalOffer);
+        return finalOffer;
     }
 
     /**

@@ -143,6 +143,8 @@ public class AuctionTemplate implements AuctionBehavior {
                 reward += task.reward;
             }
 
+            System.out.println("my net GAIN: " + (reward - bestSolutionCost));
+
 			System.out.println("AGENT " + agent.id() + " REWARD: " + reward + " SOLUTION COST = " + bestSolutionCost);
 
 
