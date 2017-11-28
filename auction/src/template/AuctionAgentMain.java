@@ -172,6 +172,8 @@ public class AuctionAgentMain implements AuctionBehavior {
          * the also the probability of obtain future tasks (more details below).
          */
 
+        System.out.println("computing the bid for auction " + auctionNumber + "...");
+
         Set<Task> tasks = new HashSet<>();
 
         // initializing the current and temporary solutions of our agent
@@ -248,6 +250,7 @@ public class AuctionAgentMain implements AuctionBehavior {
         }
 
 
+        System.out.println("evaluation of the bid completed!");
         return (long)myOffer;
     }
 

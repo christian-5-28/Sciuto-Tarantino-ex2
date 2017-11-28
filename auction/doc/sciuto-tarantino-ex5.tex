@@ -1,0 +1,132 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage[top=0.8in, bottom=0.8in, left=0.8in, right=0.8in]{geometry}
+% add other packages here
+
+% put your group number and names in the author field
+\title{\bf Exercise 5: An Auctioning Agent for the Pickup and Delivery Problem}
+\author{Group \textnumero 15: Christian Sciuto, Lorenzo Tarantino}
+
+\begin{document}
+\maketitle
+
+\section{Bidding strategy}
+
+For this task we had to develop a competitive strategy for our agent (a multi-carrier company) in order to obtain the auctions and to have a net profit higher than all the other participating agents.
+
+\subsection{The present marginal cost}
+
+First, in our strategy, we calculate the task's marginal cost in the current auction. To do this, we calculate the cost of a plan with the tasks we have already won and the auction task (with SLS developed for the centralized agent), then we subtract to this cost the cost of the plan calculated only with the tasks we won.
+
+\subsection{The enemies prediction}
+After calculating the marginal cost, we continue by estimating the predictions of the enemy agents' bids, among which we choose the minimum bet. To calculate a prediction, since we do not know the characteristics of the enemy agent, four different marginal costs are calculated, each considering the enemy agent with 2, 3, 4 and 5 vehicles respectively. Obtained these marginal costs, we run the average. Finally, we check if the ratio between our prediction and the mean of the real bids of the enemy is out of a specific range computed with the standard deviation of the real bids. In that case we bound the prediction.
+\\
+After this, we multiply our prediction by a coefficient, that is, the error ratio.
+
+\subsection{The error ratio}
+The error ratio is obtained from a weighted average of all the error ratios between the true bid of the enemy and our prediction, the weight is a coefficient between (0 - 1), this coefficient is updated by raising it to the square for each round past (example: for the last round it is worth 0.8, for the penultimate 0.16, for the third to last 0.0256 etc.) to give more weight to the last mistake, trying to react quickly to an opponent's strategy change.
+
+\subsection{Update offer with the enemy prediction}
+Once the minimum prediction is obtained, we check if our offer is less than the minimum prediction, in that case we can raise our offer to obtain a higher reward. We raise the bid to the max between our offer and the 80\% of the minimum prediction bid of the enemies. In the other case, if our offer is higher than the minimum prediction we update the offer to the 80\% of the minimum prediction bid of the enemies.
+\\
+After this, our offer must never be lower than our standard cost of work, which is the full cost of task (pathLenght * vehicleCost) multiplied by a coefficient (20\%). Therefore, we update the offer and choose the max between the offer and the standard cost. 
+\\
+Finally, our offer is updated in order to maintain balance of our net gain (reward - cost of the plan).
+
+\subsection{Update offer with balance of the net gain}
+In order to change our strategy if we are loosing and also in order to be careful of not doing offers that cause losses in the net gain, we have this final step where we check our balance:
+\\
+First we compute our net gain considering that we win the task, after this, if this new net gain is less than our current net gain we control if we are loosing (current net gain less than enemy net gain), in the positive case we raise the offer in order to maintain the same loss.
+In the negative case (we are winning) we check if our new net gain is less than the enemy net gain, in that case we raise the offer in order to not lose against the enemy, in the other case we allow a loss of the 5\% between the current net gain and the next net gain.
+
+\subsection{Update offer considering future tasks}
+In the special case of winning and with the next net gain higher than the current net gain, we produce a new offer considering the probability of finding a specific task in the future.
+\\
+We consider only the first tasks with highest probability from the taskDistribution, for each of them we calculate the auction's marginal cost: first we calculate the cost of the plan with the tasks we have already won together with the future task considered (as if we had won it), then we calculate the cost of the plan by adding the task of the auction to the task set. Once we get all the marginal costs, we calculate a weighted average of these, with weight the probability of the future task.
+Obtained this, we check if this marginal cost does not make the net gain less than that of the opponent, in the positive case we update our offer with this marginal cost.
+
+% describe in details your bidding strategy. Also, focus on answering the following questions:
+% - do you consider the probability distribution of the tasks in defining your strategy? How do you speculate about the future tasks that might be auctions?
+% - how do you use the feedback from the previous auctions to derive information about the other competitors?
+% - how do you combine all the information from the probability distribution of the tasks, the history and the planner to compute bids?
+
+\section{Results}
+% in this section, you describe several results from the experiments with your auctioning agent
+
+\subsection{Experiment 1: Comparisons with other agents}
+In this experiment we created several tournaments among our agent, our agent without the future tasks strategy and the agent proposed in the skeleton of this assignment. In every tournament we have also different number of tasks.
+% in this experiment you observe how the results depends on the number of tasks auctioned. You compare with some dummy agents and potentially several versions of your agent (with different internal parameter values). 
+
+\subsubsection{Setting}
+Tournament 1: 
+\\
+Configuration files: the default files proposed; number of task: 10 and 15; agents: our main agent and the template agent.
+\\
+\\
+Tournament 2: 
+\\
+Configuration files: the default files proposed; number of task: 5 and 5; agents: our main agent and the template agent.
+\\
+\\
+Tournament 3: 
+\\
+Configuration files: the default files proposed; number of task: 15 and 15; agents: our main agent and our agent without the future tasks strategy .
+% you describe how you perform the experiment, the environment and description of the agents you compare with
+\\
+\\
+\\
+\\
+\subsubsection{Observations}
+% you describe the experimental results and the conclusions you inferred from these results
+Tournament 1:
+\\
+\small
+\begin{center}
+    \begin{tabular}{ | l | l | l |}
+    \hline
+    \textbf{Round} & \textbf{main agent net reward} & \textbf{random agent net reward}\\ \hline
+    1 &  3457 & 0\\ \hline
+    2 &  1679 & -764\\ \hline
+    3 &  3046 & 175\\ \hline
+    4 &  2180 & 488\\ \hline
+    \end{tabular}
+\end{center}
+\normalsize
+Tournament 2:
+\\
+\small
+\begin{center}
+    \begin{tabular}{ | l | l | l |}
+    \hline
+    \textbf{Round} & \textbf{main agent net reward} & \textbf{random agent net reward}\\ \hline
+    1 &  1624 & 0\\ \hline
+    2 &  -1542 & 0\\ \hline
+    3 &  1692 & 0\\ \hline
+    4 &  818 & 0\\ \hline
+    \end{tabular}
+\end{center}
+\normalsize
+Tournament 3:
+\\
+\small
+\begin{center}
+    \begin{tabular}{ | l | l | l |}
+    \hline
+    \textbf{Round} & \textbf{main agent net reward} & \textbf{agent without future strategy net reward}\\ \hline
+    1 &  2249 & -1985\\ \hline
+    2 &  -1644 & -1788\\ \hline
+    3 &  -1261 & 1068\\ \hline
+    4 &  -222 & 381\\ \hline
+    \end{tabular}
+\end{center}
+\normalsize
+As you can see from the tables, our agent won both tournaments against the template agent. It is interesting to notice that in the round 2 of the second tournament our agent lost, probably due to the few number of tasks (5 tasks), it was not able to gain enough reward in order to cover the previous bids.
+\\
+Finally, our agent drew against the agent without the future strategy. We tried several times this tournament and the results suggests that the future strategy is not fundamental for our total strategy. Still we decided to keep this agent because its behavoiur theoretically is more coherent with the informations
+available.
+
+
+
+\end{document}
